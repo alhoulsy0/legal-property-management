@@ -6,7 +6,11 @@ import { AlertTriangle, DollarSign, TrendingUp, TrendingDown, Users, Activity, C
 import { useGlobal } from "../GlobalProvider";
 
 export default function DashboardPage() {
-  const { properties, tasks, setTasks } = useGlobal();
+  const { properties, tasks, setTasks, clients, setProperties } = useGlobal();
+
+  const updatePropertyStatus = (id: number, field: string, value: string) => {
+    setProperties(properties.map(p => p.id === id ? { ...p, [field]: value } : p));
+  };
 
   let expectedRevenue = properties.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
   let totalExpenses = properties.reduce((acc, curr) => {
@@ -227,6 +231,67 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+        <h2 className="text-xl font-extrabold text-slate-900 mb-6">إدارة سريعة للعقارات</h2>
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-right border-collapse">
+            <thead>
+              <tr className="bg-slate-50">
+                <th className="py-4 px-4 text-xs font-black text-slate-500 border-b border-slate-200 rounded-tr-xl">الموكل (المالك)</th>
+                <th className="py-4 px-4 text-xs font-black text-slate-500 border-b border-slate-200">العقار</th>
+                <th className="py-4 px-4 text-xs font-black text-slate-500 border-b border-slate-200">تاريخ الإيجار</th>
+                <th className="py-4 px-4 text-xs font-black text-slate-500 border-b border-slate-200">الحالة القانونية</th>
+                <th className="py-4 px-4 text-xs font-black text-slate-500 border-b border-slate-200 rounded-tl-xl">حالة التوريد للمالك</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {properties.map(prop => {
+                const client = clients.find(c => c.id === prop.clientId);
+                return (
+                  <tr key={prop.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-4 px-4 text-sm font-bold text-slate-800">{client?.name || 'غير معروف'}</td>
+                    <td className="py-4 px-4 text-sm font-bold text-slate-800">{prop.name}</td>
+                    <td className="py-4 px-4 text-sm font-semibold text-slate-600">{prop.nextRentDate || '-'}</td>
+                    <td className="py-4 px-4">
+                      <select 
+                        value={prop.status} 
+                        onChange={(e) => updatePropertyStatus(prop.id, 'status', e.target.value)}
+                        className={`text-xs font-black px-3 py-1.5 rounded-lg border outline-none cursor-pointer ${
+                          prop.status === 'نشط' || prop.status === 'Active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                          prop.status === 'متأخر' || prop.status === 'Delayed' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                          'bg-rose-50 text-rose-800 border-rose-200'
+                        }`}
+                      >
+                        <option value="نشط">نشط</option>
+                        <option value="متأخر">متأخر</option>
+                        <option value="قضية منظورة">قضية منظورة</option>
+                      </select>
+                    </td>
+                    <td className="py-4 px-4">
+                      <select 
+                        value={prop.payoutStatus === 'Paid to Landlord' ? 'تم التحويل' : 'قيد التحصيل'} 
+                        onChange={(e) => updatePropertyStatus(prop.id, 'payoutStatus', e.target.value === 'تم التحويل' ? 'Paid to Landlord' : 'قيد التحصيل')}
+                        className={`text-xs font-black px-3 py-1.5 rounded-lg border outline-none cursor-pointer ${
+                          prop.payoutStatus === 'Paid to Landlord' ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-slate-100 text-slate-700 border-slate-300'
+                        }`}
+                      >
+                        <option value="قيد التحصيل">قيد التحصيل</option>
+                        <option value="تم التحويل">تم التحويل (Paid)</option>
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })}
+              {properties.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-sm font-bold text-slate-400">لا توجد عقارات مسجلة.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
