@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, User, Building2 } from "lucide-react";
+import { Lock, User, Building2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -20,64 +20,68 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 relative overflow-hidden">
-      {/* Abstract Jordanian flag inspired background */}
-      <div className="absolute top-0 left-0 w-full h-1/3 bg-black"></div>
-      <div className="absolute top-1/3 left-0 w-full h-1/3 bg-white"></div>
-      <div className="absolute top-2/3 left-0 w-full h-1/3 bg-green-700"></div>
-      <div className="absolute top-0 left-0 w-0 h-0 border-t-[50vh] border-t-transparent border-l-[40vw] border-l-red-600 border-b-[50vh] border-b-transparent z-0"></div>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden">
+      {/* Modern minimal background */}
+      <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-blue-100/50 rounded-bl-full blur-3xl -z-10"></div>
+      <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-indigo-100/50 rounded-tr-full blur-3xl -z-10"></div>
       
-      <div className="absolute inset-0 bg-white/40 backdrop-blur-3xl z-10"></div>
-      
-      <div className="relative z-20 max-w-md w-full p-10 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50">
-        <Link href="/" className="absolute top-6 left-6 text-gray-500 hover:text-black font-medium transition-colors">
-          ← Back
+      <div className="relative z-20 max-w-md w-full p-8 sm:p-10 bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
+        <Link href="/" className="inline-flex items-center text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors mb-8">
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back
         </Link>
-        <div className="text-center mb-10 mt-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-600 shadow-lg shadow-red-600/40 mb-4 text-white">
-            <Building2 className="w-8 h-8" />
+        
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-sm mb-5 text-white">
+            <Building2 className="w-7 h-7" />
           </div>
-          <h2 className="text-3xl font-extrabold text-black tracking-tight">
-            Welcome Back
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Sign in to LegalProp
           </h2>
-          <p className="text-gray-600 mt-2 font-medium">Sign in to your portal</p>
+          <p className="text-slate-500 mt-2 text-sm font-medium">Enter your details to access the portal</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-5">
           <div className="space-y-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                <User className="w-5 h-5" />
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Username</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <User className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="admin"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all text-slate-900 font-medium placeholder-slate-400 sm:text-sm"
+                  required
+                />
               </div>
-              <input
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="block w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all text-black font-medium placeholder-gray-400"
-                required
-              />
             </div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                <Lock className="w-5 h-5" />
+            
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all text-slate-900 font-medium placeholder-slate-400 sm:text-sm"
+                  required
+                />
               </div>
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all text-black font-medium placeholder-gray-400"
-                required
-              />
             </div>
           </div>
           
           <button
             type="submit"
-            className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-black/20 text-sm font-bold text-white bg-black hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all hover:scale-[1.02]"
+            className="w-full flex justify-center py-3 px-4 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition-colors shadow-sm"
           >
-            Access Dashboard
+            Sign In
           </button>
         </form>
       </div>

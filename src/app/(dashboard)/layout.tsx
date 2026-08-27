@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, Briefcase, LogOut, Hexagon } from "lucide-react";
+import { Building2, Briefcase, LogOut } from "lucide-react";
 
 export default function DashboardLayout({
   children,
@@ -19,23 +19,23 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 selection:bg-red-200">
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200/50 px-6 py-4 flex items-center justify-between shadow-sm">
-        <div className="flex items-center space-x-10 max-w-7xl mx-auto w-full">
+    <div className="flex flex-col min-h-screen bg-slate-50 selection:bg-blue-200">
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/50 px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center space-x-10 max-w-[1400px] mx-auto w-full">
           <Link href="/" className="flex items-center space-x-2">
-            <div className="p-2 bg-red-600 rounded-lg shadow-md shadow-red-600/20 text-white">
+            <div className="p-1.5 bg-blue-600 rounded-lg text-white">
               <Building2 className="w-5 h-5" />
             </div>
-            <div className="font-extrabold text-xl text-black tracking-tight">
-              LegalProp <span className="text-red-600">Jordan</span>
+            <div className="font-extrabold text-xl text-slate-900 tracking-tight">
+              LegalProp
             </div>
           </Link>
           
-          <div className="flex space-x-1">
+          <div className="flex space-x-2">
             <Link 
               href="/cases" 
-              className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all font-medium ${
-                pathname === '/cases' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg transition-all text-sm font-semibold ${
+                pathname === '/cases' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               <Briefcase className="w-4 h-4" />
@@ -43,8 +43,8 @@ export default function DashboardLayout({
             </Link>
             <Link 
               href="/dashboard" 
-              className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all font-medium ${
-                (pathname === '/dashboard' || pathname.startsWith('/clients')) ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg transition-all text-sm font-semibold ${
+                (pathname === '/dashboard' || pathname.startsWith('/clients')) ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               <Building2 className="w-4 h-4" />
@@ -55,7 +55,7 @@ export default function DashboardLayout({
           <div className="flex-1 flex justify-end">
             <button 
               onClick={handleLogout}
-              className="flex items-center space-x-2 text-sm font-bold text-gray-500 hover:text-red-600 transition-colors px-4 py-2 rounded-xl hover:bg-red-50"
+              className="flex items-center space-x-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100"
             >
               <LogOut className="w-4 h-4" />
               <span>Sign out</span>
@@ -64,9 +64,7 @@ export default function DashboardLayout({
         </div>
       </nav>
       
-      <main className="flex-1 max-w-7xl w-full mx-auto p-8 relative">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-red-600/5 blur-[120px] -z-10"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-green-600/5 blur-[120px] -z-10"></div>
+      <main className="flex-1 max-w-[1400px] w-full mx-auto p-6 md:p-8 relative">
         {children}
       </main>
     </div>
