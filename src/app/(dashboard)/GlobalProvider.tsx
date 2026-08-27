@@ -34,6 +34,7 @@ export type PropertyData = {
   endDate?: string;
   nextRentDate?: string;
   payoutStatus?: string;
+  payoutMethod?: string;
   payoutTransactionId?: string;
   payoutDocument?: string;
 };

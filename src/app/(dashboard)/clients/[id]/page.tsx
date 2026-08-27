@@ -39,6 +39,7 @@ export default function ClientProfilePage() {
 
   // Payout State
   const [showPayoutFor, setShowPayoutFor] = useState<number | null>(null);
+  const [payoutMethod, setPayoutMethod] = useState("Bank Transfer");
   const [txId, setTxId] = useState("");
   const [payoutDocName, setPayoutDocName] = useState("");
 
@@ -105,6 +106,7 @@ export default function ClientProfilePage() {
         endDate,
         nextRentDate,
         payoutStatus: editingId ? properties.find(p=>p.id === editingId)?.payoutStatus || "Pending Collection" : "Pending Collection",
+        payoutMethod: editingId ? properties.find(p=>p.id === editingId)?.payoutMethod : "",
         payoutTransactionId: editingId ? properties.find(p=>p.id === editingId)?.payoutTransactionId : "",
         payoutDocument: editingId ? properties.find(p=>p.id === editingId)?.payoutDocument : ""
       };
@@ -147,9 +149,10 @@ export default function ClientProfilePage() {
 
   const handlePayoutSubmit = (e: React.FormEvent, propertyId: number) => {
     e.preventDefault();
-    if (txId) {
-      setProperties(properties.map(p => p.id === propertyId ? { ...p, payoutStatus: "Paid to Landlord", payoutTransactionId: txId, payoutDocument: payoutDocName } : p));
+    if (payoutMethod === "Cash" || txId) {
+      setProperties(properties.map(p => p.id === propertyId ? { ...p, payoutStatus: "Paid to Landlord", payoutMethod: payoutMethod, payoutTransactionId: txId, payoutDocument: payoutDocName } : p));
       setTxId("");
+      setPayoutMethod("Bank Transfer");
       setPayoutDocName("");
       setShowPayoutFor(null);
     }
@@ -344,25 +347,31 @@ export default function ClientProfilePage() {
               <div className="space-y-3 mt-6">
                 <p className="text-slate-700 font-bold text-sm flex items-center gap-3"><MapPin className="w-5 h-5 text-slate-400 shrink-0" />{prop.location}</p>
                 <p className="text-slate-700 font-bold text-sm flex items-center gap-3"><User className="w-5 h-5 text-slate-400 shrink-0" />{prop.tenant}</p>
-                
-                {prop.endDate && (
-                  <p className="text-slate-700 font-bold text-sm flex items-center gap-3">
-                    <CalendarIcon className="w-5 h-5 text-slate-400 shrink-0" />
-                    Contract Ends: {prop.endDate} 
-                    <span className={`ml-2 px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wider ${contractDaysLeft && contractDaysLeft < 30 ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {contractDaysLeft} Days Left
+              </div>
+
+              {/* Prominent Dates & Counters */}
+              <div className="mt-6 grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center relative overflow-hidden">
+                  <CalendarIcon className="absolute -right-4 -bottom-4 w-16 h-16 text-slate-200 opacity-50" />
+                  <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1 z-10">Contract Ends</p>
+                  <p className="text-sm font-bold text-slate-900 z-10 mb-2">{prop.endDate || "No Date Set"}</p>
+                  {prop.endDate && contractDaysLeft !== null && (
+                    <span className={`z-10 inline-flex w-max px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider shadow-sm ${contractDaysLeft < 30 ? 'bg-rose-600 text-white' : 'bg-slate-200 text-slate-800'}`}>
+                      {contractDaysLeft < 0 ? 'Expired' : `${contractDaysLeft} Days Left`}
                     </span>
-                  </p>
-                )}
-                {prop.nextRentDate && (
-                  <p className={`font-bold text-sm flex items-center gap-3 ${isRentLate ? 'text-rose-600' : 'text-slate-700'}`}>
-                    <Clock className={`w-5 h-5 shrink-0 ${isRentLate ? 'text-rose-500' : 'text-slate-400'}`} />
-                    Rent {isRentLate ? 'Overdue:' : 'Due:'} {prop.nextRentDate}
-                    <span className={`ml-2 px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wider ${isRentLate ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                      {isRentLate ? `${Math.abs(rentDaysLeft!)} Days Late` : `In ${rentDaysLeft} Days`}
+                  )}
+                </div>
+
+                <div className={`p-4 rounded-2xl border shadow-sm flex flex-col justify-center relative overflow-hidden ${isRentLate ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'}`}>
+                  <Clock className={`absolute -right-4 -bottom-4 w-16 h-16 opacity-20 ${isRentLate ? 'text-rose-600' : 'text-emerald-600'}`} />
+                  <p className={`text-xs font-extrabold uppercase tracking-wider mb-1 z-10 ${isRentLate ? 'text-rose-700' : 'text-emerald-700'}`}>Next Rent Due</p>
+                  <p className="text-sm font-bold text-slate-900 z-10 mb-2">{prop.nextRentDate || "No Date Set"}</p>
+                  {prop.nextRentDate && rentDaysLeft !== null && (
+                    <span className={`z-10 inline-flex w-max px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider shadow-sm ${isRentLate ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`}>
+                      {isRentLate ? `${Math.abs(rentDaysLeft)} Days Late` : `In ${rentDaysLeft} Days`}
                     </span>
-                  </p>
-                )}
+                  )}
+                </div>
               </div>
 
               {prop.documents && prop.documents.length > 0 && (
@@ -434,17 +443,27 @@ export default function ClientProfilePage() {
                   {prop.payoutStatus === 'Paid to Landlord' ? (
                     <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
                       <p className="font-bold text-emerald-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5"/> Payout Completed</p>
-                      <p className="text-sm text-emerald-700 mt-2 font-semibold">Transaction ID: {prop.payoutTransactionId}</p>
-                      {prop.payoutDocument && <p className="text-sm text-emerald-700 font-semibold">Invoice: {prop.payoutDocument}</p>}
+                      <p className="text-sm text-emerald-700 mt-2 font-semibold">Method: {prop.payoutMethod}</p>
+                      {prop.payoutTransactionId && <p className="text-sm text-emerald-700 mt-1 font-semibold">Transaction ID: {prop.payoutTransactionId}</p>}
+                      {prop.payoutDocument && <p className="text-sm text-emerald-700 mt-1 font-semibold">Receipt: {prop.payoutDocument}</p>}
                     </div>
                   ) : (
                     <form onSubmit={(e) => handlePayoutSubmit(e, prop.id)} className="space-y-4 bg-blue-50/50 p-5 rounded-xl border border-blue-100">
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Bank Transaction ID</label>
-                        <input type="text" placeholder="e.g. TXN-982374" value={txId} onChange={(e) => setTxId(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm" required />
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Payment Method</label>
+                        <select value={payoutMethod} onChange={(e) => setPayoutMethod(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm">
+                          <option>Bank Transfer</option>
+                          <option>Cash</option>
+                        </select>
                       </div>
+                      {payoutMethod === "Bank Transfer" && (
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">Bank Transaction ID</label>
+                          <input type="text" placeholder="e.g. TXN-982374" value={txId} onChange={(e) => setTxId(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm" required />
+                        </div>
+                      )}
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Upload Transfer Receipt (Optional)</label>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Upload Receipt (Optional)</label>
                         <input type="file" onChange={(e) => setPayoutDocName(e.target.files?.[0]?.name || "")} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer" />
                       </div>
                       <button type="submit" className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 text-sm shadow-sm transition-colors">
