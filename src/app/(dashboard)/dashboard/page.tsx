@@ -8,32 +8,79 @@ import { useGlobal } from "../GlobalProvider";
 export default function DashboardPage() {
   const { properties } = useGlobal();
 
-  let expectedRevenue = properties.reduce((acc, curr) => acc + curr.revenue, 0);
+  let expectedRevenue = properties.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
   let totalExpenses = properties.reduce((acc, curr) => {
-    return acc + (curr.expenses?.reduce((eAcc, eCurr) => eAcc + eCurr.amount, 0) || 0);
+    return acc + (curr.expenses?.reduce((eAcc, eCurr) => eAcc + (Number(eCurr.amount) || 0), 0) || 0);
   }, 0);
   let netCashFlow = expectedRevenue - totalExpenses;
   
-  let alerts = [
-    { id: 1, type: "delayed", message: "Rent for Sunset Apts is 5 days late.", priority: "medium" },
-    { id: 2, type: "litigation", message: "Eviction notice filed for Property B.", priority: "high" }
-  ];
+  // Dynamic Alerts
+  let alerts = [];
+  properties.forEach(p => {
+    if (p.status === "Delayed") {
+      alerts.push({ id: `d-${p.id}`, type: "delayed", message: `Rent for ${p.name} is delayed.`, priority: "medium" });
+    } else if (p.status === "Litigation") {
+      alerts.push({ id: `l-${p.id}`, type: "litigation", message: `Litigation ongoing for ${p.name}.`, priority: "high" });
+    }
+  });
 
-  let upcomingActivities = [
-    { id: 1, date: "Oct 1", title: "Lease Renewal - John Doe", time: "10:00 AM" },
-    { id: 2, date: "Oct 3", title: "Property Inspection - Unit 4B", time: "2:00 PM" },
-    { id: 3, date: "Oct 5", title: "Court Hearing - Case #842", time: "9:00 AM" },
-  ];
+  // Dynamic Upcoming Activities based on properties data
+  let upcomingActivities: any[] = [];
+  const today = new Date();
+  
+  properties.forEach(p => {
+    if (p.nextRentDate) {
+      const rentDate = new Date(p.nextRentDate);
+      const diffDays = Math.ceil((rentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays <= 14) { // within 2 weeks
+        upcomingActivities.push({
+          id: `rent-${p.id}`,
+          date: p.nextRentDate,
+          rawDate: rentDate,
+          title: `Rent Collection: ${p.name}`,
+          time: "9:00 AM"
+        });
+      }
+    }
+    
+    if (p.endDate) {
+      const contractDate = new Date(p.endDate);
+      const diffDays = Math.ceil((contractDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays <= 30) { // within 30 days
+        upcomingActivities.push({
+          id: `contract-${p.id}`,
+          date: p.endDate,
+          rawDate: contractDate,
+          title: `Contract Expiry: ${p.name}`,
+          time: "10:00 AM"
+        });
+      }
+    }
+  });
+
+  // Sort activities by date ascending
+  upcomingActivities.sort((a, b) => a.rawDate.getTime() - b.rawDate.getTime());
+  
+  if (upcomingActivities.length === 0) {
+    upcomingActivities.push({ id: "none", date: "-", rawDate: new Date(), title: "No upcoming activities in the next 14-30 days", time: "-" });
+  } else {
+    // limit to top 5
+    upcomingActivities = upcomingActivities.slice(0, 5);
+  }
 
   const [tasks, setTasks] = useState([
     { id: 1, text: "Review new tenant background checks", done: false },
-    { id: 2, text: "Send late payment notices for Sept", done: true },
     { id: 3, text: "Draft commercial lease for Acme Corp", done: false },
   ]);
   const [newTaskText, setNewTaskText] = useState("");
 
   const toggleTask = (id: number) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
+    setTasks(tasks.map(t => t.id === id ? { ...t, done: true } : t));
+    
+    // Auto-remove after a short delay so user sees the check animation
+    setTimeout(() => {
+      setTasks(current => current.filter(t => t.id !== id));
+    }, 400);
   };
 
   const addTask = (e: React.FormEvent) => {
@@ -113,7 +160,8 @@ export default function DashboardPage() {
               <span className="bg-amber-100 text-amber-800 text-xs font-extrabold px-3 py-1 rounded-full">{alerts.length} Issues</span>
             </div>
             <div className="grid gap-3">
-              {alerts.map((alert) => (
+              {alerts.length === 0 && <p className="text-sm font-bold text-slate-500 italic p-2">No active alerts.</p>}
+              {alerts.map((alert: any) => (
                 <div key={alert.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-start gap-4">
                   <div className={`p-3 rounded-xl shrink-0 ${alert.priority === "high" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>
                     <AlertTriangle className="w-5 h-5" />
@@ -151,8 +199,9 @@ export default function DashboardPage() {
             </form>
 
             <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+              {tasks.length === 0 && <p className="text-sm font-bold text-slate-500 italic p-2 text-center">All caught up!</p>}
               {tasks.map(task => (
-                <div key={task.id} className="flex items-center gap-4 p-4 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200 cursor-pointer" onClick={() => toggleTask(task.id)}>
+                <div key={task.id} className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-300 border border-transparent hover:border-slate-200 cursor-pointer ${task.done ? 'bg-slate-100 opacity-50 scale-95' : 'bg-slate-50 hover:bg-slate-100'}`} onClick={() => toggleTask(task.id)}>
                   <input type="checkbox" checked={task.done} readOnly className="w-5 h-5 rounded border-slate-300 text-blue-600 pointer-events-none" />
                   <span className={`text-sm font-bold ${task.done ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{task.text}</span>
                 </div>
