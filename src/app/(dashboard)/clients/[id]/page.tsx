@@ -450,7 +450,7 @@ export default function ClientProfilePage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="flex flex-col gap-6">
         {clientProperties.map((prop) => {
           const rentDaysLeft = calculateDays(prop.nextRentDate || "");
           const contractDaysLeft = calculateDays(prop.endDate || "");
@@ -458,8 +458,9 @@ export default function ClientProfilePage() {
 
           return (
           <div key={prop.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between group hover:shadow-md transition-shadow">
-            <div>
-              <div className="flex justify-between items-start mb-4">
+            <div className="flex flex-col xl:flex-row gap-8 xl:items-start">
+              <div className="flex-1">
+                <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-slate-100 rounded-2xl border border-slate-200">
                     <Building className="w-6 h-6 text-slate-800" />
@@ -534,10 +535,14 @@ export default function ClientProfilePage() {
                   </div>
                 </div>
               )}
-            </div>
+              </div>
             
-            <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <div className="xl:w-[450px] shrink-0 border-t xl:border-t-0 xl:border-r border-slate-100 pt-6 xl:pt-0 xl:pr-8 flex flex-col justify-between gap-6">
+                <div>
+                  <p className="text-xs font-extrabold text-slate-500 tracking-wider mb-1">الإيجار المتوقع</p>
+                  <div className="text-3xl font-black text-slate-900">${prop.revenue.toLocaleString()}</div>
+                </div>
+                <div className="flex flex-col gap-2 w-full">
                 <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showIssuesFor === prop.id ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
                   <AlertTriangle className="w-4 h-4" /> قضايا / مشاكل
                 </button>
@@ -549,10 +554,7 @@ export default function ClientProfilePage() {
                   تحويل للمالك
                 </button>
               </div>
-              <div className="text-left w-full sm:w-auto mt-2 sm:mt-0">
-                <p className="text-xs font-extrabold text-slate-500 tracking-wider mb-1">الإيجار المتوقع</p>
-                <div className="text-2xl font-black text-slate-900">${prop.revenue.toLocaleString()}</div>
-              </div>
+            </div>
             </div>
 
               {showIssuesFor === prop.id && (
