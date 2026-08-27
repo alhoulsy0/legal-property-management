@@ -32,7 +32,12 @@ export default function ClientProfilePage() {
   const [newExpenseDesc, setNewExpenseDesc] = useState("");
   const [newExpenseAmt, setNewExpenseAmt] = useState("");
 
-  const totalRevenue = clientProperties.reduce((acc, curr) => acc + curr.revenue, 0);
+  const totalRevenue = clientProperties.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
+  const totalExpenses = clientProperties.reduce((acc, curr) => {
+    return acc + (curr.expenses?.reduce((eAcc, eCurr) => eAcc + (Number(eCurr.amount) || 0), 0) || 0);
+  }, 0);
+  const netCashFlow = totalRevenue - totalExpenses;
+  
   const activeCount = clientProperties.filter(p => p.status === 'Active').length;
   const delayedCount = clientProperties.filter(p => p.status === 'Delayed' || p.status === 'Litigation').length;
 
@@ -134,26 +139,33 @@ export default function ClientProfilePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-5">
-          <div className="p-4 bg-slate-900 text-white rounded-2xl shadow-md"><DollarSign className="w-7 h-7" /></div>
+          <div className="p-4 bg-slate-900 text-white rounded-2xl shadow-md"><DollarSign className="w-6 h-6" /></div>
           <div>
-            <p className="text-sm font-bold text-slate-500">Expected Total Revenue</p>
-            <p className="text-3xl font-extrabold text-slate-900 mt-1">${totalRevenue.toLocaleString()}</p>
+            <p className="text-sm font-bold text-slate-500">Expected Total</p>
+            <p className="text-2xl font-extrabold text-slate-900 mt-1">${totalRevenue.toLocaleString()}</p>
           </div>
         </div>
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-5">
-          <div className="p-4 bg-emerald-100 text-emerald-700 rounded-2xl shadow-sm"><TrendingUp className="w-7 h-7" /></div>
+          <div className="p-4 bg-rose-100 text-rose-700 rounded-2xl shadow-sm"><TrendingDown className="w-6 h-6" /></div>
           <div>
-            <p className="text-sm font-bold text-slate-500">Active Properties</p>
-            <p className="text-3xl font-extrabold text-emerald-600 mt-1">{activeCount}</p>
+            <p className="text-sm font-bold text-slate-500">Total Expenses</p>
+            <p className="text-2xl font-extrabold text-rose-600 mt-1">${totalExpenses.toLocaleString()}</p>
+          </div>
+        </div>
+        <div className="bg-slate-900 p-6 rounded-3xl shadow-md border border-slate-800 flex items-center gap-5">
+          <div className="p-4 bg-slate-800 text-white rounded-2xl shadow-sm"><TrendingUp className="w-6 h-6" /></div>
+          <div>
+            <p className="text-sm font-bold text-slate-300">Net Cash Flow</p>
+            <p className="text-2xl font-extrabold text-white mt-1">${netCashFlow.toLocaleString()}</p>
           </div>
         </div>
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-5">
-          <div className="p-4 bg-rose-100 text-rose-700 rounded-2xl shadow-sm"><AlertTriangle className="w-7 h-7" /></div>
+          <div className="p-4 bg-amber-100 text-amber-700 rounded-2xl shadow-sm"><AlertTriangle className="w-6 h-6" /></div>
           <div>
-            <p className="text-sm font-bold text-slate-500">Issues / Delayed</p>
-            <p className="text-3xl font-extrabold text-rose-600 mt-1">{delayedCount}</p>
+            <p className="text-sm font-bold text-slate-500">Delayed / Issues</p>
+            <p className="text-2xl font-extrabold text-amber-600 mt-1">{delayedCount}</p>
           </div>
         </div>
       </div>
