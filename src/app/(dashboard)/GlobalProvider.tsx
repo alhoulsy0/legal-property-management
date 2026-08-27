@@ -40,11 +40,19 @@ export type PropertyData = {
   payoutDocument?: string;
 };
 
+export interface TaskData {
+  id: number;
+  text: string;
+  done: boolean;
+}
+
 type GlobalContextType = {
   clients: ClientData[];
   setClients: React.Dispatch<React.SetStateAction<ClientData[]>>;
   properties: PropertyData[];
   setProperties: React.Dispatch<React.SetStateAction<PropertyData[]>>;
+  tasks: TaskData[];
+  setTasks: React.Dispatch<React.SetStateAction<TaskData[]>>;
 };
 
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
@@ -52,12 +60,14 @@ const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
 export function GlobalProvider({ children }: { children: React.ReactNode }) {
   const [clients, setClients] = useState<ClientData[]>([]);
   const [properties, setProperties] = useState<PropertyData[]>([]);
+  const [tasks, setTasks] = useState<TaskData[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Initialize with some mock data if empty, and try to use localStorage
   useEffect(() => {
     const savedClients = localStorage.getItem("legalprop_clients");
     const savedProps = localStorage.getItem("legalprop_properties");
+    const savedTasks = localStorage.getItem("legalprop_tasks");
     
     if (savedClients) {
       setClients(JSON.parse(savedClients));
@@ -76,6 +86,17 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
         { id: 2, clientId: 1, type: "Commercial", name: "Downtown Office", location: "Amman, Boulevard", tenant: "TechCorp", status: "Delayed", paymentFreq: "Yearly", revenue: 15000, documents: [], expenses: [] },
       ]);
     }
+
+    if (savedTasks) {
+      setTasks(JSON.parse(savedTasks));
+    } else {
+      setTasks([
+        { id: 1, text: "مراجعة ملفات المستأجر الجديد", done: false },
+        { id: 2, text: "توقيع عقد عمارة الياسمين", done: false },
+        { id: 3, text: "متابعة صيانة الشقة رقم 4", done: false },
+        { id: 4, text: "إرسال إشعار تأخير دفع للمستأجر", done: false }
+      ]);
+    }
     setIsLoaded(true);
   }, []);
 
@@ -84,13 +105,14 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     if (isLoaded) {
       localStorage.setItem("legalprop_clients", JSON.stringify(clients));
       localStorage.setItem("legalprop_properties", JSON.stringify(properties));
+      localStorage.setItem("legalprop_tasks", JSON.stringify(tasks));
     }
-  }, [clients, properties, isLoaded]);
+  }, [clients, properties, tasks, isLoaded]);
 
   if (!isLoaded) return null; // Avoid hydration mismatch
 
   return (
-    <GlobalContext.Provider value={{ clients, setClients, properties, setProperties }}>
+    <GlobalContext.Provider value={{ clients, setClients, properties, setProperties, tasks, setTasks }}>
       {children}
     </GlobalContext.Provider>
   );

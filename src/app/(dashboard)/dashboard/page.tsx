@@ -6,7 +6,7 @@ import { AlertTriangle, DollarSign, TrendingUp, TrendingDown, Users, Activity, C
 import { useGlobal } from "../GlobalProvider";
 
 export default function DashboardPage() {
-  const { properties } = useGlobal();
+  const { properties, tasks, setTasks } = useGlobal();
 
   let expectedRevenue = properties.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
   let totalExpenses = properties.reduce((acc, curr) => {
@@ -66,10 +66,6 @@ export default function DashboardPage() {
     upcomingActivities = upcomingActivities.slice(0, 5);
   }
 
-  const [tasks, setTasks] = useState([
-    { id: 1, text: "مراجعة ملفات المستأجر الجديد", done: false },
-    { id: 3, text: "صياغة عقد تجاري لشركة الأفق", done: false },
-  ]);
   const [newTaskText, setNewTaskText] = useState("");
 
   const toggleTask = (id: number) => {
