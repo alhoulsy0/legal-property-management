@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, TrendingDown, AlertTriangle, Trash2, Download, Receipt } from "lucide-react";
+import { ArrowLeft, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, TrendingDown, AlertTriangle, Trash2, Download, Receipt, Send, CheckCircle2 } from "lucide-react";
 import { useGlobal, PropertyData, ExpenseData } from "../../GlobalProvider";
 
 export default function ClientProfilePage() {
@@ -26,12 +26,23 @@ export default function ClientProfilePage() {
   const [newPropStatus, setNewPropStatus] = useState("Active");
   const [newPropRev, setNewPropRev] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+  
+  // New Contract Fields
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [nextRentDate, setNextRentDate] = useState("");
 
   // Expenses State
   const [showExpensesFor, setShowExpensesFor] = useState<number | null>(null);
   const [newExpenseDesc, setNewExpenseDesc] = useState("");
   const [newExpenseAmt, setNewExpenseAmt] = useState("");
 
+  // Payout State
+  const [showPayoutFor, setShowPayoutFor] = useState<number | null>(null);
+  const [txId, setTxId] = useState("");
+  const [payoutDocName, setPayoutDocName] = useState("");
+
+  // Mini-dashboard metrics
   const totalRevenue = clientProperties.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
   const totalExpenses = clientProperties.reduce((acc, curr) => {
     return acc + (curr.expenses?.reduce((eAcc, eCurr) => eAcc + (Number(eCurr.amount) || 0), 0) || 0);
@@ -44,12 +55,14 @@ export default function ClientProfilePage() {
   const openAdd = () => {
     setEditingId(null);
     setNewPropName(""); setNewPropType("Residential"); setNewPropLocation(""); setNewPropTenant(""); setNewPropFreq("Monthly (1st)"); setNewPropStatus("Active"); setNewPropRev(""); setUploadedFiles([]);
+    setStartDate(""); setEndDate(""); setNextRentDate("");
     setIsAdding(true);
   };
 
   const openEdit = (prop: PropertyData) => {
     setEditingId(prop.id);
     setNewPropName(prop.name); setNewPropType(prop.type); setNewPropLocation(prop.location); setNewPropTenant(prop.tenant !== "N/A" ? prop.tenant : ""); setNewPropFreq(prop.paymentFreq); setNewPropStatus(prop.status); setNewPropRev(prop.revenue.toString()); setUploadedFiles(prop.documents || []);
+    setStartDate(prop.startDate || ""); setEndDate(prop.endDate || ""); setNextRentDate(prop.nextRentDate || "");
     setIsAdding(true);
   };
 
@@ -70,6 +83,12 @@ export default function ClientProfilePage() {
   const handleSaveProperty = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPropName && newPropLocation) {
+      // Auto-flag delayed if rent is past due
+      let calculatedStatus = newPropStatus;
+      if (nextRentDate && new Date(nextRentDate) < new Date() && calculatedStatus === "Active") {
+        calculatedStatus = "Delayed";
+      }
+
       const propertyData: PropertyData = {
         id: editingId || Date.now(),
         clientId: clientId,
@@ -77,11 +96,17 @@ export default function ClientProfilePage() {
         name: newPropName,
         location: newPropLocation,
         tenant: newPropTenant || "N/A",
-        status: newPropStatus,
+        status: calculatedStatus,
         paymentFreq: newPropFreq,
         revenue: Number(newPropRev) || 0,
         documents: uploadedFiles,
-        expenses: editingId ? properties.find(p=>p.id === editingId)?.expenses || [] : []
+        expenses: editingId ? properties.find(p=>p.id === editingId)?.expenses || [] : [],
+        startDate,
+        endDate,
+        nextRentDate,
+        payoutStatus: editingId ? properties.find(p=>p.id === editingId)?.payoutStatus || "Pending Collection" : "Pending Collection",
+        payoutTransactionId: editingId ? properties.find(p=>p.id === editingId)?.payoutTransactionId : "",
+        payoutDocument: editingId ? properties.find(p=>p.id === editingId)?.payoutDocument : ""
       };
 
       if (editingId) {
@@ -94,7 +119,6 @@ export default function ClientProfilePage() {
   };
 
   const handleDownload = (docName: string) => {
-    // Simulated Download
     const blob = new Blob(["Simulated document content for " + docName], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -119,6 +143,23 @@ export default function ClientProfilePage() {
       setNewExpenseDesc("");
       setNewExpenseAmt("");
     }
+  };
+
+  const handlePayoutSubmit = (e: React.FormEvent, propertyId: number) => {
+    e.preventDefault();
+    if (txId) {
+      setProperties(properties.map(p => p.id === propertyId ? { ...p, payoutStatus: "Paid to Landlord", payoutTransactionId: txId, payoutDocument: payoutDocName } : p));
+      setTxId("");
+      setPayoutDocName("");
+      setShowPayoutFor(null);
+    }
+  };
+
+  const calculateDays = (targetDate: string) => {
+    if (!targetDate) return null;
+    const diffTime = new Date(targetDate).getTime() - new Date().getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
   };
 
   if (!client) {
@@ -201,26 +242,31 @@ export default function ClientProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Tenant Name (Optional)</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Tenant Name</label>
                 <input type="text" value={newPropTenant} onChange={(e) => setNewPropTenant(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" placeholder="John Doe" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Payment Terms</label>
-                <select value={newPropFreq} onChange={(e) => setNewPropFreq(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900">
-                  <option>Monthly (1st)</option><option>Monthly (15th)</option><option>Monthly (End of Month)</option><option>Quarterly</option><option>Yearly</option>
-                </select>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Contract Start Date</label>
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900" />
               </div>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-bold text-slate-800 mb-2">Expected Rent ($)</label>
-                  <input type="number" value={newPropRev} onChange={(e) => setNewPropRev(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" placeholder="0" />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-bold text-slate-800 mb-2">Status</label>
-                  <select value={newPropStatus} onChange={(e) => setNewPropStatus(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900">
-                    <option>Active</option><option>Delayed</option><option>Litigation</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Contract End Date</label>
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900" />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Next Rent Due Date</label>
+                <input type="date" value={nextRentDate} onChange={(e) => setNextRentDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Expected Rent ($)</label>
+                <input type="number" value={newPropRev} onChange={(e) => setNewPropRev(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Status</label>
+                <select value={newPropStatus} onChange={(e) => setNewPropStatus(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900">
+                  <option>Active</option><option>Delayed</option><option>Litigation</option>
+                </select>
               </div>
 
               <div className="col-span-full">
@@ -263,7 +309,12 @@ export default function ClientProfilePage() {
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {clientProperties.map((prop) => (
+        {clientProperties.map((prop) => {
+          const rentDaysLeft = calculateDays(prop.nextRentDate || "");
+          const contractDaysLeft = calculateDays(prop.endDate || "");
+          const isRentLate = rentDaysLeft !== null && rentDaysLeft < 0;
+
+          return (
           <div key={prop.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between group hover:shadow-md transition-shadow">
             <div>
               <div className="flex justify-between items-start mb-4">
@@ -293,10 +344,27 @@ export default function ClientProfilePage() {
               <div className="space-y-3 mt-6">
                 <p className="text-slate-700 font-bold text-sm flex items-center gap-3"><MapPin className="w-5 h-5 text-slate-400 shrink-0" />{prop.location}</p>
                 <p className="text-slate-700 font-bold text-sm flex items-center gap-3"><User className="w-5 h-5 text-slate-400 shrink-0" />{prop.tenant}</p>
-                <p className="text-slate-700 font-bold text-sm flex items-center gap-3"><CalendarIcon className="w-5 h-5 text-slate-400 shrink-0" />Due: {prop.paymentFreq}</p>
+                
+                {prop.endDate && (
+                  <p className="text-slate-700 font-bold text-sm flex items-center gap-3">
+                    <CalendarIcon className="w-5 h-5 text-slate-400 shrink-0" />
+                    Contract Ends: {prop.endDate} 
+                    <span className={`ml-2 px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wider ${contractDaysLeft && contractDaysLeft < 30 ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {contractDaysLeft} Days Left
+                    </span>
+                  </p>
+                )}
+                {prop.nextRentDate && (
+                  <p className={`font-bold text-sm flex items-center gap-3 ${isRentLate ? 'text-rose-600' : 'text-slate-700'}`}>
+                    <Clock className={`w-5 h-5 shrink-0 ${isRentLate ? 'text-rose-500' : 'text-slate-400'}`} />
+                    Rent {isRentLate ? 'Overdue:' : 'Due:'} {prop.nextRentDate}
+                    <span className={`ml-2 px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wider ${isRentLate ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                      {isRentLate ? `${Math.abs(rentDaysLeft!)} Days Late` : `In ${rentDaysLeft} Days`}
+                    </span>
+                  </p>
+                )}
               </div>
 
-              {/* Documents Quick View */}
               {prop.documents && prop.documents.length > 0 && (
                 <div className="mt-5 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Attached Documents</p>
@@ -317,51 +385,78 @@ export default function ClientProfilePage() {
               )}
             </div>
             
-            <div className="mt-6 pt-5 border-t border-slate-100 flex justify-between items-end">
-              <div className="flex space-x-3">
-                <button onClick={() => setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id)} className={`px-4 py-2.5 rounded-xl transition-colors text-sm font-extrabold flex items-center gap-2 border shadow-sm ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
-                  <Receipt className="w-4 h-4" /> Expenses
-                  {prop.expenses && prop.expenses.length > 0 && (
-                    <span className={`text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm ${showExpensesFor === prop.id ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}`}>{prop.expenses.length}</span>
-                  )}
-                </button>
+            <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col gap-4">
+              <div className="flex justify-between items-end">
+                <div className="flex space-x-2">
+                  <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowPayoutFor(null);}} className={`px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center gap-2 border shadow-sm ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
+                    <Receipt className="w-4 h-4" /> Expenses
+                  </button>
+                  <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowExpensesFor(null);}} className={`px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center gap-2 border shadow-sm ${showPayoutFor === prop.id ? 'bg-blue-600 text-white border-blue-600' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
+                    {prop.payoutStatus === 'Paid to Landlord' ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />} 
+                    Payout
+                  </button>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">Expected Rent</p>
+                  <div className="text-2xl font-black text-slate-900">${prop.revenue.toLocaleString()}</div>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">Expected Rent</p>
-                <div className="text-2xl font-black text-slate-900">${prop.revenue.toLocaleString()}</div>
-              </div>
-            </div>
 
-            {/* Expenses Drawer */}
-            {showExpensesFor === prop.id && (
-              <div className="mt-5 border-t border-slate-200 pt-5 animate-in slide-in-from-top-2 duration-300">
-                <h4 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><Receipt className="w-4 h-4 text-slate-500" /> Property Expenses</h4>
-                
-                <div className="space-y-3 mb-5 max-h-48 overflow-y-auto custom-scrollbar">
-                  {(prop.expenses || []).length === 0 ? (
-                     <p className="text-sm text-slate-500 font-semibold italic">No expenses logged yet.</p>
-                  ) : (
-                    prop.expenses?.map(exp => (
-                      <div key={exp.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">{exp.description}</p>
-                          <p className="text-xs font-semibold text-slate-500 mt-0.5">{exp.date}</p>
+              {showExpensesFor === prop.id && (
+                <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
+                  <h4 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><Receipt className="w-4 h-4 text-slate-500" /> Property Expenses</h4>
+                  <div className="space-y-3 mb-5 max-h-48 overflow-y-auto custom-scrollbar">
+                    {(prop.expenses || []).length === 0 ? (
+                       <p className="text-sm text-slate-500 font-semibold italic">No expenses logged yet.</p>
+                    ) : (
+                      prop.expenses?.map(exp => (
+                        <div key={exp.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">{exp.description}</p>
+                            <p className="text-xs font-semibold text-slate-500 mt-0.5">{exp.date}</p>
+                          </div>
+                          <span className="font-extrabold text-rose-600">${exp.amount}</span>
                         </div>
-                        <span className="font-extrabold text-rose-600">${exp.amount}</span>
+                      ))
+                    )}
+                  </div>
+                  <form onSubmit={(e) => handleAddExpense(e, prop.id)} className="flex gap-3">
+                    <input type="text" placeholder="Expense description..." value={newExpenseDesc} onChange={(e) => setNewExpenseDesc(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-slate-900 outline-none" required />
+                    <input type="number" placeholder="$ Amt" value={newExpenseAmt} onChange={(e) => setNewExpenseAmt(e.target.value)} className="w-24 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-slate-900 outline-none" required />
+                    <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 text-sm shadow-sm whitespace-nowrap">Add</button>
+                  </form>
+                </div>
+              )}
+
+              {showPayoutFor === prop.id && (
+                <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
+                  <h4 className="text-sm font-extrabold text-blue-800 mb-4 flex items-center gap-2"><Send className="w-4 h-4 text-blue-600" /> Landlord Payout Transfer</h4>
+                  {prop.payoutStatus === 'Paid to Landlord' ? (
+                    <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                      <p className="font-bold text-emerald-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5"/> Payout Completed</p>
+                      <p className="text-sm text-emerald-700 mt-2 font-semibold">Transaction ID: {prop.payoutTransactionId}</p>
+                      {prop.payoutDocument && <p className="text-sm text-emerald-700 font-semibold">Invoice: {prop.payoutDocument}</p>}
+                    </div>
+                  ) : (
+                    <form onSubmit={(e) => handlePayoutSubmit(e, prop.id)} className="space-y-4 bg-blue-50/50 p-5 rounded-xl border border-blue-100">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Bank Transaction ID</label>
+                        <input type="text" placeholder="e.g. TXN-982374" value={txId} onChange={(e) => setTxId(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm" required />
                       </div>
-                    ))
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Upload Transfer Receipt (Optional)</label>
+                        <input type="file" onChange={(e) => setPayoutDocName(e.target.files?.[0]?.name || "")} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer" />
+                      </div>
+                      <button type="submit" className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 text-sm shadow-sm transition-colors">
+                        Confirm Payout to Landlord
+                      </button>
+                    </form>
                   )}
                 </div>
-
-                <form onSubmit={(e) => handleAddExpense(e, prop.id)} className="flex gap-3">
-                  <input type="text" placeholder="Expense description..." value={newExpenseDesc} onChange={(e) => setNewExpenseDesc(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none" required />
-                  <input type="number" placeholder="$ Amt" value={newExpenseAmt} onChange={(e) => setNewExpenseAmt(e.target.value)} className="w-24 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none" required />
-                  <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 text-sm shadow-sm whitespace-nowrap">Add</button>
-                </form>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        ))}
+        )})}
         {clientProperties.length === 0 && !isAdding && (
           <div className="col-span-full py-20 bg-slate-50 border-2 border-dashed border-slate-300 rounded-3xl flex flex-col items-center justify-center text-slate-500">
             <Building className="w-12 h-12 text-slate-400 mb-4" />

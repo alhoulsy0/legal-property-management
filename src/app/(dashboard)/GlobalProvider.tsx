@@ -30,6 +30,12 @@ export type PropertyData = {
   revenue: number;
   documents: any[];
   expenses: ExpenseData[];
+  startDate?: string;
+  endDate?: string;
+  nextRentDate?: string;
+  payoutStatus?: string;
+  payoutTransactionId?: string;
+  payoutDocument?: string;
 };
 
 type GlobalContextType = {
