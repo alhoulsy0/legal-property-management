@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowRight, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, TrendingDown, AlertTriangle, Trash2, Download, Receipt, Send, CheckCircle2, FileBarChart } from "lucide-react";
+import { ArrowRight, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, TrendingDown, AlertTriangle, Trash2, Download, Receipt, Send, CheckCircle2, FileBarChart, Copy } from "lucide-react";
 import { useGlobal, PropertyData, ExpenseData } from "../../GlobalProvider";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -64,7 +64,6 @@ export default function ClientProfilePage() {
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.addFont("Cairo-Regular.ttf", "Cairo", "normal");
-    // jsPDF doesn't natively support Arabic RTL well without plugins, but we'll try basic rendering or English fallback for numbers.
     doc.setFontSize(20);
     doc.text(`Financial Statement: ${client?.name}`, 14, 22);
     
@@ -110,6 +109,15 @@ export default function ClientProfilePage() {
     setNewPropName(prop.name); setNewPropType(prop.type); setNewPropLocation(prop.location); setNewPropTenant(prop.tenant !== "N/A" ? prop.tenant : ""); setNewPropFreq(prop.paymentFreq); setNewPropStatus(prop.status); setNewPropRev(prop.revenue.toString()); setUploadedFiles(prop.documents || []);
     setStartDate(prop.startDate || ""); setEndDate(prop.endDate || ""); setNextRentDate(prop.nextRentDate || "");
     setIsAdding(true);
+  };
+
+  const handleDuplicateProperty = (prop: PropertyData) => {
+    const duplicatedProp = {
+      ...prop,
+      id: Date.now(),
+      name: `${prop.name} (نسخة)`,
+    };
+    setProperties([...properties, duplicatedProp]);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -462,7 +470,10 @@ export default function ClientProfilePage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => openEdit(prop)} className="p-2 text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-200 rounded-xl transition-colors border border-slate-200 shadow-sm opacity-0 group-hover:opacity-100">
+                  <button onClick={() => handleDuplicateProperty(prop)} className="p-2 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 rounded-xl transition-colors border border-slate-200 shadow-sm opacity-0 group-hover:opacity-100" title="نسخ العقار">
+                    <Copy className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => openEdit(prop)} className="p-2 text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-200 rounded-xl transition-colors border border-slate-200 shadow-sm opacity-0 group-hover:opacity-100" title="تعديل">
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <span className={`px-3 py-1.5 text-xs font-extrabold rounded-xl shadow-sm border ${
