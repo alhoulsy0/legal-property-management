@@ -631,7 +631,6 @@ export default function ClientProfilePage() {
                   )}
                 </div>
               )}
-            </div>
           </div>
         )})}
         {clientProperties.length === 0 && !isAdding && (
