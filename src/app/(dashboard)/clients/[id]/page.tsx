@@ -1,4 +1,5 @@
 "use client";
+import html2canvas from "html2canvas";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -64,37 +65,23 @@ export default function ClientProfilePage() {
     });
   });
 
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.addFont("Cairo-Regular.ttf", "Cairo", "normal");
-    doc.setFontSize(20);
-    doc.text(`Financial Statement: ${client?.name}`, 14, 22);
-    
-    doc.setFontSize(11);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 32);
-    doc.text(`Total Expected Income: $${totalRevenue}`, 14, 40);
-    doc.text(`Total Deductions: $${totalExpenses}`, 14, 46);
-    doc.text(`Net Cash Flow (Due to Landlord): $${netCashFlow}`, 14, 52);
-
-    const tableColumn = ["Date", "Type", "Description", "Amount ($)", "Status"];
-    const tableRows = ledgerData.map(item => [
-      item.date,
-      item.type,
-      item.desc,
-      item.amount.toString(),
-      item.status
-    ]);
-
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 60,
-      theme: 'grid',
-      styles: { fontSize: 10, font: "helvetica" },
-      headStyles: { fillColor: [15, 23, 42] }
-    });
-
-    doc.save(`${client?.name}_Financial_Report.pdf`);
+  const exportPDF = async () => {
+    const ledgerEl = document.getElementById("ledger-report");
+    if (!ledgerEl) {
+      alert("الرجاء فتح الكشف المالي أولاً لتصديره");
+      return;
+    }
+    try {
+      const canvas = await html2canvas(ledgerEl, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${client?.name}_Financial_Report.pdf`);
+    } catch(err) {
+      console.error(err);
+    }
   };
   
   const activeCount = clientProperties.filter(p => p.status === 'Active' || p.status === 'نشط').length;
@@ -337,7 +324,14 @@ export default function ClientProfilePage() {
             </div>
             
             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
-              <div className="grid grid-cols-3 gap-5 mb-8">
+              <div id="ledger-report" className="bg-white p-6 rounded-xl">
+                {/* Print Title */}
+                <div className="mb-6 border-b border-slate-200 pb-4">
+                  <h3 className="text-2xl font-extrabold text-slate-900">{client?.name} - كشف حساب مفصل</h3>
+                  <p className="text-sm text-slate-500 font-bold mt-1">تاريخ الإصدار: {new Date().toLocaleDateString()}</p>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-5 mb-8">
                 <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl text-center">
                   <p className="text-sm font-extrabold text-slate-500 tracking-wider mb-1">إجمالي الإيرادات</p>
                   <p className="text-2xl font-black text-slate-900">${totalRevenue.toLocaleString()}</p>
@@ -380,6 +374,7 @@ export default function ClientProfilePage() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         </div>
@@ -476,7 +471,8 @@ export default function ClientProfilePage() {
         </div>
       )}
 
-      <div className="flex flex-col mt-6 bg-white rounded-3xl shadow-sm border border-slate-200 px-6 overflow-hidden">
+      <div className="mt-6 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-x-auto custom-scrollbar">
+        <div className="flex flex-col min-w-[1100px] px-6">
         {clientProperties.map((prop) => {
           const rentDaysLeft = calculateDays(prop.nextRentDate || "");
           const contractDaysLeft = calculateDays(prop.endDate || "");
@@ -707,6 +703,7 @@ export default function ClientProfilePage() {
             <p className="text-sm font-semibold mt-2 text-slate-500">قم بتسجيل عقار جديد لبدء إدارة المحفظة.</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
