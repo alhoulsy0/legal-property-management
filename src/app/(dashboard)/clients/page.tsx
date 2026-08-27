@@ -62,7 +62,7 @@ export default function ClientsPage() {
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">سجل الموكلين</h1>
           <p className="text-slate-600 mt-1 text-sm font-bold">إدارة بيانات الملاك والموكلين وعقاراتهم</p>
         </div>
-        <button onClick={openAdd} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl shadow-md hover:bg-slate-800 transition-colors font-bold flex items-center space-x-2 text-sm">
+        <button onClick={openAdd} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl shadow-md hover:bg-slate-800 transition-colors font-bold flex items-center gap-2 text-sm">
           <Plus className="w-5 h-5" />
           <span>إضافة موكل جديد</span>
         </button>
@@ -87,7 +87,7 @@ export default function ClientsPage() {
                 </div>
               </div>
             </div>
-            <div className="flex space-x-3 space-x-reverse pt-4 border-t border-slate-100">
+            <div className="flex flex-wrap gap-3 pt-4 border-t border-slate-100">
               <button type="submit" className="bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 font-bold text-sm transition-colors shadow-md">
                 {editingId ? 'حفظ التعديلات' : 'حفظ الموكل'}
               </button>

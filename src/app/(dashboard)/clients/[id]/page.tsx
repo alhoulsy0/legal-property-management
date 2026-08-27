@@ -211,7 +211,7 @@ export default function ClientProfilePage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center space-x-4 space-x-reverse mb-2">
+      <div className="flex items-center gap-4 mb-2">
         <Link href="/clients" className="p-2.5 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-slate-500 hover:text-slate-900 border border-slate-300">
           <ArrowRight className="w-5 h-5" />
         </Link>
@@ -407,7 +407,7 @@ export default function ClientProfilePage() {
               </div>
             </div>
 
-            <div className="flex space-x-3 space-x-reverse pt-6 border-t border-slate-200">
+            <div className="flex flex-wrap gap-3 pt-6 border-t border-slate-200">
               <button type="submit" className="bg-slate-900 text-white px-8 py-3 rounded-xl hover:bg-slate-800 font-bold text-sm transition-colors shadow-md">
                 {editingId ? 'حفظ التعديلات' : 'تسجيل العقار'}
               </button>
@@ -507,22 +507,21 @@ export default function ClientProfilePage() {
               )}
             </div>
             
-            <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col gap-4">
-              <div className="flex justify-between items-end">
-                <div className="flex space-x-2 space-x-reverse">
-                  <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowPayoutFor(null);}} className={`px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center gap-2 border shadow-sm ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
-                    <Receipt className="w-4 h-4" /> إضافة مصروف
-                  </button>
-                  <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowExpensesFor(null);}} className={`px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center gap-2 border shadow-sm ${showPayoutFor === prop.id ? 'bg-blue-600 text-white border-blue-600' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
-                    {prop.payoutStatus === 'Paid to Landlord' ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />} 
-                    تحويل للمالك
-                  </button>
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-extrabold text-slate-500 tracking-wider mb-1">الإيجار المتوقع</p>
-                  <div className="text-2xl font-black text-slate-900">${prop.revenue.toLocaleString()}</div>
-                </div>
+            <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowPayoutFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
+                  <Receipt className="w-4 h-4" /> إضافة مصروف
+                </button>
+                <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowExpensesFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showPayoutFor === prop.id ? 'bg-blue-600 text-white border-blue-600' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
+                  {prop.payoutStatus === 'Paid to Landlord' ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />} 
+                  تحويل للمالك
+                </button>
               </div>
+              <div className="text-left w-full sm:w-auto mt-2 sm:mt-0">
+                <p className="text-xs font-extrabold text-slate-500 tracking-wider mb-1">الإيجار المتوقع</p>
+                <div className="text-2xl font-black text-slate-900">${prop.revenue.toLocaleString()}</div>
+              </div>
+            </div>
 
               {showExpensesFor === prop.id && (
                 <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
@@ -542,8 +541,8 @@ export default function ClientProfilePage() {
                       ))
                     )}
                   </div>
-                  <form onSubmit={(e) => handleAddExpense(e, prop.id)} className="flex gap-3">
-                    <input type="text" placeholder="وصف المصروف (مثال: صيانة سباكة)..." value={newExpenseDesc} onChange={(e) => setNewExpenseDesc(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-slate-900 outline-none" required />
+                  <form onSubmit={(e) => handleAddExpense(e, prop.id)} className="flex flex-wrap gap-3">
+                    <input type="text" placeholder="وصف المصروف (مثال: صيانة سباكة)..." value={newExpenseDesc} onChange={(e) => setNewExpenseDesc(e.target.value)} className="flex-1 min-w-[200px] px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-slate-900 outline-none" required />
                     <input type="number" placeholder="المبلغ $" value={newExpenseAmt} onChange={(e) => setNewExpenseAmt(e.target.value)} className="w-24 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-slate-900 outline-none" required />
                     <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 text-sm shadow-sm whitespace-nowrap">إضافة</button>
                   </form>

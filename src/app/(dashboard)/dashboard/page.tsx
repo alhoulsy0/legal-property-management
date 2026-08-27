@@ -97,7 +97,7 @@ export default function DashboardPage() {
         </div>
         <Link
           href="/clients"
-          className="bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-colors font-bold flex items-center space-x-2 text-sm shadow-md"
+          className="bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-colors font-bold flex items-center gap-2 text-sm shadow-md"
         >
           <Users className="w-5 h-5" />
           <span>إدارة الموكلين</span>
@@ -106,7 +106,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-          <div className="flex items-center space-x-3 space-x-reverse text-slate-500 mb-3">
+          <div className="flex items-center gap-3 text-slate-500 mb-3">
             <div className="p-2 bg-slate-100 rounded-xl">
               <DollarSign className="w-5 h-5 text-slate-700" />
             </div>
@@ -116,7 +116,7 @@ export default function DashboardPage() {
         </div>
         
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-          <div className="flex items-center space-x-3 space-x-reverse text-emerald-600 mb-3">
+          <div className="flex items-center gap-3 text-emerald-600 mb-3">
             <div className="p-2 bg-emerald-50 rounded-xl text-emerald-700">
               <TrendingUp className="w-5 h-5" />
             </div>
@@ -126,7 +126,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-          <div className="flex items-center space-x-3 space-x-reverse text-rose-600 mb-3">
+          <div className="flex items-center gap-3 text-rose-600 mb-3">
             <div className="p-2 bg-rose-50 rounded-xl text-rose-700">
               <TrendingDown className="w-5 h-5" />
             </div>
@@ -136,7 +136,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-slate-900 p-6 rounded-3xl shadow-md border border-slate-800">
-          <div className="flex items-center space-x-3 space-x-reverse text-slate-300 mb-3">
+          <div className="flex items-center gap-3 text-slate-300 mb-3">
             <div className="p-2 bg-slate-800 rounded-xl text-white">
               <Activity className="w-5 h-5" />
             </div>
