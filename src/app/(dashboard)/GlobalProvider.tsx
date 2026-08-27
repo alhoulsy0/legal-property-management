@@ -10,6 +10,14 @@ export type ClientData = {
   status: string;
 };
 
+export type ExpenseData = {
+  id: number;
+  description: string;
+  amount: number;
+  date: string;
+  documentName?: string;
+};
+
 export type PropertyData = {
   id: number;
   clientId: number;
@@ -21,6 +29,7 @@ export type PropertyData = {
   paymentFreq: string;
   revenue: number;
   documents: any[];
+  expenses: ExpenseData[];
 };
 
 type GlobalContextType = {
@@ -55,8 +64,8 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
       setProperties(JSON.parse(savedProps));
     } else {
       setProperties([
-        { id: 1, clientId: 1, type: "Residential", name: "Sunset Apartments", location: "Amman, 1st Circle", tenant: "Ahmad Ali", status: "Active", paymentFreq: "Monthly (1st)", revenue: 500, documents: [] },
-        { id: 2, clientId: 1, type: "Commercial", name: "Downtown Office", location: "Amman, Boulevard", tenant: "TechCorp", status: "Delayed", paymentFreq: "Yearly", revenue: 15000, documents: [] },
+        { id: 1, clientId: 1, type: "Residential", name: "Sunset Apartments", location: "Amman, 1st Circle", tenant: "Ahmad Ali", status: "Active", paymentFreq: "Monthly (1st)", revenue: 500, documents: [{ name: "lease_agreement.pdf", size: 1024000 }], expenses: [{ id: 1, description: "Plumbing repair", amount: 150, date: "2023-10-01", documentName: "receipt_plumbing.pdf" }] },
+        { id: 2, clientId: 1, type: "Commercial", name: "Downtown Office", location: "Amman, Boulevard", tenant: "TechCorp", status: "Delayed", paymentFreq: "Yearly", revenue: 15000, documents: [], expenses: [] },
       ]);
     }
     setIsLoaded(true);

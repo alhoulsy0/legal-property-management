@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, AlertTriangle, Trash2 } from "lucide-react";
-import { useGlobal, PropertyData } from "../../GlobalProvider";
+import { ArrowLeft, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, AlertTriangle, Trash2, Download, Receipt } from "lucide-react";
+import { useGlobal, PropertyData, ExpenseData } from "../../GlobalProvider";
 
 export default function ClientProfilePage() {
   const params = useParams();
@@ -26,6 +26,11 @@ export default function ClientProfilePage() {
   const [newPropStatus, setNewPropStatus] = useState("Active");
   const [newPropRev, setNewPropRev] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+
+  // Expenses State
+  const [showExpensesFor, setShowExpensesFor] = useState<number | null>(null);
+  const [newExpenseDesc, setNewExpenseDesc] = useState("");
+  const [newExpenseAmt, setNewExpenseAmt] = useState("");
 
   const totalRevenue = clientProperties.reduce((acc, curr) => acc + curr.revenue, 0);
   const activeCount = clientProperties.filter(p => p.status === 'Active').length;
@@ -70,7 +75,8 @@ export default function ClientProfilePage() {
         status: newPropStatus,
         paymentFreq: newPropFreq,
         revenue: Number(newPropRev) || 0,
-        documents: uploadedFiles
+        documents: uploadedFiles,
+        expenses: editingId ? properties.find(p=>p.id === editingId)?.expenses || [] : []
       };
 
       if (editingId) {
@@ -79,6 +85,34 @@ export default function ClientProfilePage() {
         setProperties([...properties, propertyData]);
       }
       setIsAdding(false);
+    }
+  };
+
+  const handleDownload = (docName: string) => {
+    // Simulated Download
+    const blob = new Blob(["Simulated document content for " + docName], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = docName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleAddExpense = (e: React.FormEvent, propertyId: number) => {
+    e.preventDefault();
+    if (newExpenseDesc && newExpenseAmt) {
+      const newExp: ExpenseData = {
+        id: Date.now(),
+        description: newExpenseDesc,
+        amount: Number(newExpenseAmt),
+        date: new Date().toISOString().split('T')[0]
+      };
+      setProperties(properties.map(p => p.id === propertyId ? { ...p, expenses: [...(p.expenses || []), newExp] } : p));
+      setNewExpenseDesc("");
+      setNewExpenseAmt("");
     }
   };
 
@@ -96,11 +130,10 @@ export default function ClientProfilePage() {
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
             {client.name}'s Portfolio
           </h1>
-          <p className="text-slate-600 text-sm font-semibold mt-1">Manage assets and contracts for this client</p>
+          <p className="text-slate-600 text-sm font-semibold mt-1">Manage assets, contracts, and expenses for this client</p>
         </div>
       </div>
 
-      {/* Mini Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-5">
           <div className="p-4 bg-slate-900 text-white rounded-2xl shadow-md"><DollarSign className="w-7 h-7" /></div>
@@ -187,7 +220,7 @@ export default function ClientProfilePage() {
                   <p className="text-xs font-semibold text-slate-500 mt-1">PDF, DOCX up to 10MB</p>
                 </div>
                 {uploadedFiles.length > 0 && (
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
                     {uploadedFiles.map((file, i) => (
                       <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-800 bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm">
                         <FileText className="w-5 h-5 text-blue-600 shrink-0" />
@@ -250,18 +283,35 @@ export default function ClientProfilePage() {
                 <p className="text-slate-700 font-bold text-sm flex items-center gap-3"><User className="w-5 h-5 text-slate-400 shrink-0" />{prop.tenant}</p>
                 <p className="text-slate-700 font-bold text-sm flex items-center gap-3"><CalendarIcon className="w-5 h-5 text-slate-400 shrink-0" />Due: {prop.paymentFreq}</p>
               </div>
+
+              {/* Documents Quick View */}
+              {prop.documents && prop.documents.length > 0 && (
+                <div className="mt-5 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Attached Documents</p>
+                  <div className="space-y-2">
+                    {prop.documents.map((doc, i) => (
+                      <div key={i} className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                          <span className="text-sm font-bold text-slate-700 truncate">{doc.name}</span>
+                        </div>
+                        <button onClick={() => handleDownload(doc.name)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             
-            <div className="mt-8 pt-5 border-t border-slate-100 flex justify-between items-end">
+            <div className="mt-6 pt-5 border-t border-slate-100 flex justify-between items-end">
               <div className="flex space-x-3">
-                <button className="px-4 py-2 bg-slate-100 text-slate-800 rounded-xl hover:bg-slate-200 transition-colors text-sm font-extrabold flex items-center gap-2 border border-slate-200 relative shadow-sm">
-                  <FileText className="w-4 h-4 text-blue-600" /> Docs
-                  {prop.documents && prop.documents.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm">{prop.documents.length}</span>
+                <button onClick={() => setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id)} className={`px-4 py-2.5 rounded-xl transition-colors text-sm font-extrabold flex items-center gap-2 border shadow-sm ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
+                  <Receipt className="w-4 h-4" /> Expenses
+                  {prop.expenses && prop.expenses.length > 0 && (
+                    <span className={`text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm ${showExpensesFor === prop.id ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}`}>{prop.expenses.length}</span>
                   )}
-                </button>
-                <button className="px-4 py-2 bg-slate-100 text-slate-800 rounded-xl hover:bg-slate-200 transition-colors text-sm font-extrabold flex items-center gap-2 border border-slate-200 shadow-sm">
-                  <Clock className="w-4 h-4 text-slate-500" /> History
                 </button>
               </div>
               <div className="text-right">
@@ -269,6 +319,35 @@ export default function ClientProfilePage() {
                 <div className="text-2xl font-black text-slate-900">${prop.revenue.toLocaleString()}</div>
               </div>
             </div>
+
+            {/* Expenses Drawer */}
+            {showExpensesFor === prop.id && (
+              <div className="mt-5 border-t border-slate-200 pt-5 animate-in slide-in-from-top-2 duration-300">
+                <h4 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><Receipt className="w-4 h-4 text-slate-500" /> Property Expenses</h4>
+                
+                <div className="space-y-3 mb-5 max-h-48 overflow-y-auto custom-scrollbar">
+                  {(prop.expenses || []).length === 0 ? (
+                     <p className="text-sm text-slate-500 font-semibold italic">No expenses logged yet.</p>
+                  ) : (
+                    prop.expenses?.map(exp => (
+                      <div key={exp.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">{exp.description}</p>
+                          <p className="text-xs font-semibold text-slate-500 mt-0.5">{exp.date}</p>
+                        </div>
+                        <span className="font-extrabold text-rose-600">${exp.amount}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <form onSubmit={(e) => handleAddExpense(e, prop.id)} className="flex gap-3">
+                  <input type="text" placeholder="Expense description..." value={newExpenseDesc} onChange={(e) => setNewExpenseDesc(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <input type="number" placeholder="$ Amt" value={newExpenseAmt} onChange={(e) => setNewExpenseAmt(e.target.value)} className="w-24 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 text-sm shadow-sm whitespace-nowrap">Add</button>
+                </form>
+              </div>
+            )}
           </div>
         ))}
         {clientProperties.length === 0 && !isAdding && (
