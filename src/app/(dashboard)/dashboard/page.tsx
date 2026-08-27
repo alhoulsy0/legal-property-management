@@ -1,8 +1,10 @@
-import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { AlertTriangle, DollarSign, TrendingUp, TrendingDown, Users, ChevronRight, Activity, Calendar, CheckSquare, Clock } from "lucide-react";
+"use client";
 
-export default async function DashboardPage() {
+import { useState } from "react";
+import Link from "next/link";
+import { AlertTriangle, DollarSign, TrendingUp, TrendingDown, Users, ChevronRight, Activity, Calendar, CheckSquare, Clock, Plus } from "lucide-react";
+
+export default function DashboardPage() {
   let expectedRevenue = 15000;
   let collectedRevenue = 12500;
   let totalExpenses = 4200;
@@ -19,18 +21,24 @@ export default async function DashboardPage() {
     { id: 3, date: "Oct 5", title: "Court Hearing - Case #842", time: "9:00 AM" },
   ];
 
-  let tasks = [
+  const [tasks, setTasks] = useState([
     { id: 1, text: "Review new tenant background checks", done: false },
     { id: 2, text: "Send late payment notices for Sept", done: true },
     { id: 3, text: "Draft commercial lease for Acme Corp", done: false },
-  ];
+  ]);
+  const [newTaskText, setNewTaskText] = useState("");
 
-  try {
-    const { data: contracts } = await supabase.from('contracts').select('*');
-    if (contracts && contracts.length > 0) {}
-  } catch (error) {
-    console.error("Supabase connection error:", error);
-  }
+  const toggleTask = (id: number) => {
+    setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
+  };
+
+  const addTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newTaskText.trim()) {
+      setTasks([{ id: Date.now(), text: newTaskText, done: false }, ...tasks]);
+      setNewTaskText("");
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -49,6 +57,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Metric Cards... */}
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
           <div className="flex items-center space-x-3 text-slate-500 mb-3">
             <div className="p-1.5 bg-slate-100 rounded-lg">
@@ -91,7 +100,6 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        {/* Left Column: Alerts and Tasks */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between mb-5">
@@ -101,7 +109,6 @@ export default async function DashboardPage() {
               </h2>
               <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-0.5 rounded-full">{alerts.length} Issues</span>
             </div>
-            
             <div className="grid gap-3">
               {alerts.map((alert) => (
                 <div key={alert.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50 flex items-start gap-3">
@@ -119,17 +126,31 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col max-h-[400px]">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <CheckSquare className="w-5 h-5 text-blue-500" />
                 To-Do List
               </h2>
             </div>
-            <div className="space-y-3">
+            
+            <form onSubmit={addTask} className="mb-4 flex gap-2">
+              <input
+                type="text"
+                value={newTaskText}
+                onChange={e => setNewTaskText(e.target.value)}
+                placeholder="Add a new task..."
+                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button type="submit" className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <Plus className="w-5 h-5" />
+              </button>
+            </form>
+
+            <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar">
               {tasks.map(task => (
-                <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
-                  <input type="checkbox" checked={task.done} readOnly className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 cursor-pointer" onClick={() => toggleTask(task.id)}>
+                  <input type="checkbox" checked={task.done} readOnly className="w-4 h-4 rounded border-slate-300 text-blue-600 pointer-events-none" />
                   <span className={`text-sm font-medium ${task.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{task.text}</span>
                 </div>
               ))}
@@ -145,17 +166,13 @@ export default async function DashboardPage() {
               Upcoming Activities
             </h2>
           </div>
-          
           <div className="flex-1 space-y-6">
             {upcomingActivities.map((activity, i) => (
               <div key={activity.id} className="relative pl-6 pb-6 last:pb-0">
-                {/* Timeline line */}
                 {i !== upcomingActivities.length - 1 && (
                   <div className="absolute left-[7px] top-5 bottom-0 w-px bg-slate-200"></div>
                 )}
-                {/* Timeline dot */}
                 <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-indigo-500 bg-white"></div>
-                
                 <div>
                   <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">{activity.date}</span>
                   <p className="text-sm font-bold text-slate-900 mt-1">{activity.title}</p>
@@ -166,10 +183,6 @@ export default async function DashboardPage() {
               </div>
             ))}
           </div>
-          
-          <button className="mt-6 w-full py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
-            View Full Calendar
-          </button>
         </div>
       </div>
     </div>
