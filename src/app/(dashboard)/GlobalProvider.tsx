@@ -18,6 +18,14 @@ export type ExpenseData = {
   documentName?: string;
 };
 
+export type RentCycle = {
+  id: string;
+  dueDate: string;
+  amount: number;
+  receivedFromTenant: boolean;
+  paidToLandlord: boolean;
+};
+
 export type PropertyData = {
   id: number;
   clientId: number;
@@ -27,6 +35,9 @@ export type PropertyData = {
   tenant: string;
   status: string;
   paymentFreq: string;
+  rentAmount?: number;
+  durationMonths?: number;
+  rentCycles?: RentCycle[];
   revenue: number;
   documents?: any[];
   expenses?: ExpenseData[];

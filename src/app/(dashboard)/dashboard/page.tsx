@@ -268,6 +268,7 @@ export default function DashboardPage() {
                         <option value="نشط">نشط</option>
                         <option value="متأخر">متأخر</option>
                         <option value="قضية منظورة">قضية منظورة</option>
+                        <option value="محجوز">محجوز (موقوف)</option>
                       </select>
                     </td>
                     <td className="py-4 px-4">

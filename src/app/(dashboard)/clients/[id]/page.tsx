@@ -27,6 +27,8 @@ export default function ClientProfilePage() {
   const [newPropFreq, setNewPropFreq] = useState("شهري (الأول من الشهر)");
   const [newPropStatus, setNewPropStatus] = useState("نشط");
   const [newPropRev, setNewPropRev] = useState("");
+  const [newPropRentAmount, setNewPropRentAmount] = useState("");
+  const [newPropDuration, setNewPropDuration] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   
   const [startDate, setStartDate] = useState("");
@@ -41,6 +43,7 @@ export default function ClientProfilePage() {
   const [newIssueDesc, setNewIssueDesc] = useState("");
 
   const [showPayoutFor, setShowPayoutFor] = useState<number | null>(null);
+  const [showRentCyclesFor, setShowRentCyclesFor] = useState<number | null>(null);
   const [payoutMethod, setPayoutMethod] = useState("تحويل بنكي");
   const [txId, setTxId] = useState("");
   const [payoutDocName, setPayoutDocName] = useState("");
@@ -99,14 +102,14 @@ export default function ClientProfilePage() {
 
   const openAdd = () => {
     setEditingId(null);
-    setNewPropName(""); setNewPropType("سكني"); setNewPropLocation(""); setNewPropTenant(""); setNewPropFreq("شهري (الأول من الشهر)"); setNewPropStatus("نشط"); setNewPropRev(""); setUploadedFiles([]);
+    setNewPropName(""); setNewPropType("سكني"); setNewPropLocation(""); setNewPropTenant(""); setNewPropFreq("شهري (الأول من الشهر)"); setNewPropStatus("نشط"); setNewPropRev(""); setNewPropRentAmount(""); setNewPropDuration(""); setUploadedFiles([]);
     setStartDate(""); setEndDate(""); setNextRentDate("");
     setIsAdding(true);
   };
 
   const openEdit = (prop: PropertyData) => {
     setEditingId(prop.id);
-    setNewPropName(prop.name); setNewPropType(prop.type); setNewPropLocation(prop.location); setNewPropTenant(prop.tenant !== "N/A" ? prop.tenant : ""); setNewPropFreq(prop.paymentFreq); setNewPropStatus(prop.status); setNewPropRev(prop.revenue.toString()); setUploadedFiles(prop.documents || []);
+    setNewPropName(prop.name); setNewPropType(prop.type); setNewPropLocation(prop.location); setNewPropTenant(prop.tenant !== "N/A" ? prop.tenant : ""); setNewPropFreq(prop.paymentFreq); setNewPropStatus(prop.status); setNewPropRev(prop.revenue.toString()); setNewPropRentAmount(prop.rentAmount?.toString() || ""); setNewPropDuration(prop.durationMonths?.toString() || ""); setUploadedFiles(prop.documents || []);
     setStartDate(prop.startDate || ""); setEndDate(prop.endDate || ""); setNextRentDate(prop.nextRentDate || "");
     setIsAdding(true);
   };
@@ -142,6 +145,22 @@ export default function ClientProfilePage() {
         calculatedStatus = "متأخر";
       }
 
+      let generatedCycles = editingId ? properties.find(p=>p.id === editingId)?.rentCycles || [] : [];
+      if (!editingId && startDate && newPropDuration && newPropRentAmount) {
+        let sDate = new Date(startDate);
+        for (let i = 0; i < Number(newPropDuration); i++) {
+          const d = new Date(sDate);
+          d.setMonth(d.getMonth() + i);
+          generatedCycles.push({
+            id: Date.now().toString() + "-" + i,
+            dueDate: d.toISOString().split("T")[0],
+            amount: Number(newPropRentAmount),
+            receivedFromTenant: false,
+            paidToLandlord: false
+          });
+        }
+      }
+
       const propertyData: PropertyData = {
         id: editingId || Date.now(),
         clientId: clientId,
@@ -151,7 +170,10 @@ export default function ClientProfilePage() {
         tenant: newPropTenant || "غير محدد",
         status: calculatedStatus,
         paymentFreq: newPropFreq,
-        revenue: Number(newPropRev) || 0,
+        revenue: (Number(newPropRentAmount) * Number(newPropDuration)) || Number(newPropRev) || 0,
+        rentAmount: Number(newPropRentAmount),
+        durationMonths: Number(newPropDuration),
+        rentCycles: generatedCycles,
         documents: uploadedFiles,
         expenses: editingId ? properties.find(p=>p.id === editingId)?.expenses || [] : [],
         issues: editingId ? properties.find(p=>p.id === editingId)?.issues || [] : [],
@@ -401,13 +423,17 @@ export default function ClientProfilePage() {
                 <input type="date" value={nextRentDate} onChange={(e) => setNextRentDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">قيمة الإيجار المتوقعة ($)</label>
-                <input type="number" value={newPropRev} onChange={(e) => setNewPropRev(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" placeholder="0" />
+                <label className="block text-sm font-bold text-slate-800 mb-2">قيمة الإيجار الشهري ($)</label>
+                <input type="number" value={newPropRentAmount} onChange={(e) => setNewPropRentAmount(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">مدة العقد (بالأشهر)</label>
+                <input type="number" value={newPropDuration} onChange={(e) => setNewPropDuration(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" placeholder="12" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">الحالة القانونية</label>
                 <select value={newPropStatus} onChange={(e) => setNewPropStatus(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900">
-                  <option>نشط</option><option>متأخر</option><option>قضية منظورة</option>
+                  <option>نشط</option><option>متأخر</option><option>قضية منظورة</option><option>محجوز</option>
                 </select>
               </div>
 
@@ -450,14 +476,14 @@ export default function ClientProfilePage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col mt-6 bg-white rounded-3xl shadow-sm border border-slate-200 px-6 overflow-hidden">
         {clientProperties.map((prop) => {
           const rentDaysLeft = calculateDays(prop.nextRentDate || "");
           const contractDaysLeft = calculateDays(prop.endDate || "");
           const isRentLate = rentDaysLeft !== null && rentDaysLeft < 0;
 
           return (
-          <div key={prop.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between group hover:shadow-md transition-shadow">
+          <div key={prop.id} className="bg-white py-8 border-b border-slate-200 flex flex-col justify-between group transition-colors">
             <div className="flex flex-col xl:flex-row gap-8 xl:items-start">
               <div className="flex-1">
                 <div className="flex justify-between items-start mb-4">
@@ -543,19 +569,74 @@ export default function ClientProfilePage() {
                   <div className="text-3xl font-black text-slate-900">${prop.revenue.toLocaleString()}</div>
                 </div>
                 <div className="flex flex-col gap-2 w-full">
-                <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showIssuesFor === prop.id ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
+                <button onClick={() => {setShowRentCyclesFor(showRentCyclesFor === prop.id ? null : prop.id); setShowIssuesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showRentCyclesFor === prop.id ? 'bg-indigo-100 text-indigo-800 border-indigo-200' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
+                  <CalendarIcon className="w-4 h-4" /> دفعات الإيجار
+                </button>
+                <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showIssuesFor === prop.id ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
                   <AlertTriangle className="w-4 h-4" /> قضايا / مشاكل
                 </button>
-                <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowIssuesFor(null); setShowPayoutFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
+                <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowIssuesFor(null); setShowPayoutFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
                   <Receipt className="w-4 h-4" /> إضافة مصروف
                 </button>
-                <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowExpensesFor(null); setShowIssuesFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showPayoutFor === prop.id ? 'bg-blue-600 text-white border-blue-600' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
+                <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowIssuesFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showPayoutFor === prop.id ? 'bg-blue-600 text-white border-blue-600' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
                   {prop.payoutStatus === 'Paid to Landlord' ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />} 
                   تحويل للمالك
                 </button>
               </div>
             </div>
             </div>
+
+              {showRentCyclesFor === prop.id && (
+                <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
+                  <h4 className="text-sm font-extrabold text-indigo-800 mb-4 flex items-center gap-2"><CalendarIcon className="w-4 h-4 text-indigo-600" /> جدول دفعات الإيجار</h4>
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-right border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50">
+                          <th className="py-2 px-3 text-xs font-black text-slate-500 border-b border-slate-200 rounded-tr-lg">تاريخ الاستحقاق</th>
+                          <th className="py-2 px-3 text-xs font-black text-slate-500 border-b border-slate-200">المبلغ</th>
+                          <th className="py-2 px-3 text-xs font-black text-slate-500 border-b border-slate-200">استلام من المستأجر</th>
+                          <th className="py-2 px-3 text-xs font-black text-slate-500 border-b border-slate-200 rounded-tl-lg">تحويل للمالك</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {(prop.rentCycles || []).length === 0 ? (
+                           <tr><td colSpan={4} className="text-sm text-slate-500 font-semibold italic py-4">لم يتم توليد جدول دفعات.</td></tr>
+                        ) : (
+                          prop.rentCycles?.map(cycle => (
+                            <tr key={cycle.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="py-3 px-3 text-sm font-bold text-slate-800">{cycle.dueDate}</td>
+                              <td className="py-3 px-3 text-sm font-bold text-indigo-700">${cycle.amount}</td>
+                              <td className="py-3 px-3 text-sm font-bold">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input type="checkbox" checked={cycle.receivedFromTenant} onChange={(e) => {
+                                    const updated = properties.map(p => p.id === prop.id ? {...p, rentCycles: p.rentCycles?.map(c => c.id === cycle.id ? {...c, receivedFromTenant: e.target.checked} : c)} : p);
+                                    setProperties(updated);
+                                  }} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600" />
+                                  <span className={cycle.receivedFromTenant ? "text-emerald-600" : "text-slate-500"}>
+                                    {cycle.receivedFromTenant ? "تم الاستلام" : "قيد الانتظار"}
+                                  </span>
+                                </label>
+                              </td>
+                              <td className="py-3 px-3 text-sm font-bold">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input type="checkbox" checked={cycle.paidToLandlord} onChange={(e) => {
+                                    const updated = properties.map(p => p.id === prop.id ? {...p, rentCycles: p.rentCycles?.map(c => c.id === cycle.id ? {...c, paidToLandlord: e.target.checked} : c)} : p);
+                                    setProperties(updated);
+                                  }} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600" />
+                                  <span className={cycle.paidToLandlord ? "text-emerald-600" : "text-slate-500"}>
+                                    {cycle.paidToLandlord ? "تم التحويل" : "معلق"}
+                                  </span>
+                                </label>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {showIssuesFor === prop.id && (
                 <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
