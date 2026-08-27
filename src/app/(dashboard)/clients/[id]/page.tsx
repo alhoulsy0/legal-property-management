@@ -5,11 +5,23 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2 } from "lucide-react";
 
+type Property = {
+  id: number;
+  type: string;
+  name: string;
+  location: string;
+  tenant: string;
+  status: string;
+  paymentFreq: string;
+  revenue: number;
+  documents: File[];
+};
+
 export default function ClientProfilePage() {
   const params = useParams();
   const clientId = params.id;
 
-  const [properties, setProperties] = useState([
+  const [properties, setProperties] = useState<Property[]>([
     { id: 1, type: "Residential", name: "Sunset Apartments", location: "123 Sunset Blvd", tenant: "Alice Johnson", status: "Active", paymentFreq: "Monthly (1st)", revenue: 5000, documents: [] },
     { id: 2, type: "Commercial", name: "Downtown Office Plaza", location: "456 Main St", tenant: "TechCorp Inc.", status: "Delayed", paymentFreq: "Yearly", revenue: 10000, documents: [] },
   ]);
