@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, TrendingDown, AlertTriangle, Trash2, Download, Receipt, Send, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, TrendingDown, AlertTriangle, Trash2, Download, Receipt, Send, CheckCircle2, FileBarChart } from "lucide-react";
 import { useGlobal, PropertyData, ExpenseData } from "../../GlobalProvider";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function ClientProfilePage() {
   const params = useParams();
@@ -43,12 +45,55 @@ export default function ClientProfilePage() {
   const [txId, setTxId] = useState("");
   const [payoutDocName, setPayoutDocName] = useState("");
 
+  const [showLedger, setShowLedger] = useState(false);
+
   // Mini-dashboard metrics
   const totalRevenue = clientProperties.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
   const totalExpenses = clientProperties.reduce((acc, curr) => {
     return acc + (curr.expenses?.reduce((eAcc, eCurr) => eAcc + (Number(eCurr.amount) || 0), 0) || 0);
   }, 0);
   const netCashFlow = totalRevenue - totalExpenses;
+
+  // Generate Ledger Data
+  const ledgerData: any[] = [];
+  clientProperties.forEach(p => {
+    ledgerData.push({ type: "Income", desc: `Rent: ${p.name}`, amount: p.revenue, date: p.nextRentDate || "-", status: p.payoutStatus || "Pending" });
+    p.expenses?.forEach(exp => {
+      ledgerData.push({ type: "Expense", desc: `${p.name}: ${exp.description}`, amount: -exp.amount, date: exp.date, status: "Deducted" });
+    });
+  });
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text(`Financial Statement: ${client?.name}`, 14, 22);
+    
+    doc.setFontSize(11);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 32);
+    doc.text(`Total Expected Income: $${totalRevenue}`, 14, 40);
+    doc.text(`Total Deductions: $${totalExpenses}`, 14, 46);
+    doc.text(`Net Cash Flow (Due to Landlord): $${netCashFlow}`, 14, 52);
+
+    const tableColumn = ["Date", "Type", "Description", "Amount ($)", "Status"];
+    const tableRows = ledgerData.map(item => [
+      item.date,
+      item.type,
+      item.desc,
+      item.amount.toString(),
+      item.status
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 60,
+      theme: 'grid',
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [15, 23, 42] } // slate-900
+    });
+
+    doc.save(`${client?.name}_Financial_Report.pdf`);
+  };
   
   const activeCount = clientProperties.filter(p => p.status === 'Active').length;
   const delayedCount = clientProperties.filter(p => p.status === 'Delayed' || p.status === 'Litigation').length;
@@ -218,11 +263,84 @@ export default function ClientProfilePage() {
         <div>
           <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Registered Properties</h2>
         </div>
-        <button onClick={openAdd} className="bg-blue-600 text-white px-6 py-3 rounded-xl shadow-md hover:bg-blue-700 transition-colors font-bold flex items-center space-x-2 text-sm">
-          <Plus className="w-5 h-5" />
-          <span>Add Property</span>
-        </button>
+        <div className="flex gap-3">
+          <button onClick={() => setShowLedger(true)} className="bg-slate-100 text-slate-900 border border-slate-300 px-5 py-3 rounded-xl hover:bg-slate-200 transition-colors font-bold flex items-center space-x-2 text-sm shadow-sm">
+            <FileBarChart className="w-5 h-5" />
+            <span>Financial Ledger</span>
+          </button>
+          <button onClick={openAdd} className="bg-blue-600 text-white px-6 py-3 rounded-xl shadow-md hover:bg-blue-700 transition-colors font-bold flex items-center space-x-2 text-sm">
+            <Plus className="w-5 h-5" />
+            <span>Add Property</span>
+          </button>
+        </div>
       </div>
+
+      {showLedger && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in p-4">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
+              <div>
+                <h3 className="text-2xl font-extrabold text-slate-900">{client.name} - Master Ledger</h3>
+                <p className="text-sm text-slate-500 font-bold mt-1">Consolidated Income and Expense Statement</p>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={exportPDF} className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl hover:bg-emerald-700 font-bold text-sm shadow-md flex items-center gap-2">
+                  <Download className="w-4 h-4" /> Export PDF
+                </button>
+                <button onClick={() => setShowLedger(false)} className="bg-white text-slate-700 border border-slate-300 px-5 py-2.5 rounded-xl hover:bg-slate-100 font-bold text-sm shadow-sm">
+                  Close
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+              <div className="grid grid-cols-3 gap-5 mb-8">
+                <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl text-center">
+                  <p className="text-sm font-extrabold text-slate-500 uppercase tracking-wider mb-1">Gross Income</p>
+                  <p className="text-2xl font-black text-slate-900">${totalRevenue.toLocaleString()}</p>
+                </div>
+                <div className="p-5 bg-rose-50 border border-rose-200 rounded-2xl text-center">
+                  <p className="text-sm font-extrabold text-rose-600 uppercase tracking-wider mb-1">Deductions</p>
+                  <p className="text-2xl font-black text-rose-700">${totalExpenses.toLocaleString()}</p>
+                </div>
+                <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-2xl text-center">
+                  <p className="text-sm font-extrabold text-emerald-700 uppercase tracking-wider mb-1">Net to Landlord</p>
+                  <p className="text-2xl font-black text-emerald-700">${netCashFlow.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-100/50">
+                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 uppercase border-b border-slate-200 rounded-tl-xl">Date</th>
+                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 uppercase border-b border-slate-200">Type</th>
+                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 uppercase border-b border-slate-200">Description</th>
+                    <th className="py-3 px-4 text-right text-xs font-extrabold text-slate-600 uppercase border-b border-slate-200">Amount</th>
+                    <th className="py-3 px-4 text-right text-xs font-extrabold text-slate-600 uppercase border-b border-slate-200 rounded-tr-xl">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {ledgerData.length === 0 ? (
+                    <tr><td colSpan={5} className="py-10 text-center text-slate-500 font-bold">No financial records found.</td></tr>
+                  ) : (
+                    ledgerData.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4 text-sm font-bold text-slate-700">{item.date}</td>
+                        <td className="py-3 px-4 text-sm font-bold">
+                          <span className={`px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider ${item.type === 'Income' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>{item.type}</span>
+                        </td>
+                        <td className="py-3 px-4 text-sm font-semibold text-slate-900">{item.desc}</td>
+                        <td className={`py-3 px-4 text-right text-sm font-extrabold ${item.amount < 0 ? 'text-rose-600' : 'text-slate-900'}`}>{item.amount < 0 ? `-$${Math.abs(item.amount)}` : `$${item.amount}`}</td>
+                        <td className="py-3 px-4 text-right text-sm font-bold text-slate-500">{item.status}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isAdding && (
         <div className="bg-white p-8 rounded-3xl shadow-lg border border-slate-200 mb-6 relative overflow-hidden">
