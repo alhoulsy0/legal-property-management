@@ -521,7 +521,6 @@ export default function ClientProfilePage() {
                 <p className="text-xs font-extrabold text-slate-500 tracking-wider mb-1">الإيجار المتوقع</p>
                 <div className="text-2xl font-black text-slate-900">${prop.revenue.toLocaleString()}</div>
               </div>
-            </div>
 
               {showExpensesFor === prop.id && (
                 <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
