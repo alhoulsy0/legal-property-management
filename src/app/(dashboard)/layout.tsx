@@ -1,75 +1,46 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Building2, Briefcase, LogOut } from "lucide-react";
+import { Scale, LogOut, LayoutDashboard, Users, FileText } from "lucide-react";
 import { GlobalProvider } from "./GlobalProvider";
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const pathname = usePathname();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    document.cookie = "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    router.push("/login");
-    router.refresh();
-  };
-
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 selection:bg-blue-200">
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/50 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-10 max-w-[1400px] mx-auto w-full">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="p-1.5 bg-blue-600 rounded-lg text-white">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <div className="font-extrabold text-xl text-slate-900 tracking-tight">
-              LegalProp
-            </div>
-          </Link>
-          
-          <div className="flex space-x-2">
-            <Link 
-              href="/cases" 
-              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg transition-all text-sm font-semibold ${
-                pathname === '/cases' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-            >
-              <Briefcase className="w-4 h-4" />
-              <span>Cases</span>
-            </Link>
-            <Link 
-              href="/dashboard" 
-              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg transition-all text-sm font-semibold ${
-                (pathname === '/dashboard' || pathname.startsWith('/clients')) ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-            >
-              <Building2 className="w-4 h-4" />
-              <span>Property Management</span>
-            </Link>
+    <GlobalProvider>
+      <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row rtl">
+        {/* Sidebar */}
+        <aside className="w-full md:w-72 bg-slate-900 text-slate-300 flex flex-col">
+          <div className="p-6 flex items-center gap-3 border-b border-slate-800">
+            <Scale className="w-8 h-8 text-blue-500" />
+            <h1 className="text-xl font-extrabold text-white tracking-tight">مكتب المحاماة للأملاك</h1>
           </div>
           
-          <div className="flex-1 flex justify-end">
-            <button 
-              onClick={handleLogout}
-              className="flex items-center space-x-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sign out</span>
-            </button>
+          <nav className="flex-1 p-4 space-y-2">
+            <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition-all font-bold group">
+              <LayoutDashboard className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+              اللوحة الرئيسية
+            </Link>
+            <Link href="/clients" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition-all font-bold group">
+              <Users className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+              الموكلين (الملاك)
+            </Link>
+            <Link href="/cases" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition-all font-bold group">
+              <FileText className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+              القضايا والنزاعات
+            </Link>
+          </nav>
+
+          <div className="p-4 border-t border-slate-800">
+            <Link href="/login" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-950/30 hover:text-rose-400 transition-all font-bold text-slate-400 group">
+              <LogOut className="w-5 h-5 group-hover:text-rose-500 transition-colors" />
+              تسجيل الخروج
+            </Link>
           </div>
-        </div>
-      </nav>
-      
-      <main className="flex-1 max-w-[1400px] w-full mx-auto p-6 md:p-8 relative">
-        <GlobalProvider>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full">
           {children}
-        </GlobalProvider>
-      </main>
-    </div>
+        </main>
+      </div>
+    </GlobalProvider>
   );
 }
