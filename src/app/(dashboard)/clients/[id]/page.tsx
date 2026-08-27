@@ -1,30 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2 } from "lucide-react";
-
-type Property = {
-  id: number;
-  type: string;
-  name: string;
-  location: string;
-  tenant: string;
-  status: string;
-  paymentFreq: string;
-  revenue: number;
-  documents: File[];
-};
+import { ArrowLeft, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, AlertTriangle } from "lucide-react";
+import { useGlobal, PropertyData } from "../../GlobalProvider";
 
 export default function ClientProfilePage() {
   const params = useParams();
-  const clientId = params.id;
+  const clientId = Number(params.id);
 
-  const [properties, setProperties] = useState<Property[]>([
-    { id: 1, type: "Residential", name: "Sunset Apartments", location: "123 Sunset Blvd", tenant: "Alice Johnson", status: "Active", paymentFreq: "Monthly (1st)", revenue: 5000, documents: [] },
-    { id: 2, type: "Commercial", name: "Downtown Office Plaza", location: "456 Main St", tenant: "TechCorp Inc.", status: "Delayed", paymentFreq: "Yearly", revenue: 10000, documents: [] },
-  ]);
+  const { clients, properties, setProperties } = useGlobal();
+
+  const client = clients.find(c => c.id === clientId);
+  const clientProperties = properties.filter(p => p.clientId === clientId);
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -36,7 +25,12 @@ export default function ClientProfilePage() {
   const [newPropFreq, setNewPropFreq] = useState("Monthly (1st)");
   const [newPropStatus, setNewPropStatus] = useState("Active");
   const [newPropRev, setNewPropRev] = useState("");
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+
+  // Mini-dashboard metrics
+  const totalRevenue = clientProperties.reduce((acc, curr) => acc + curr.revenue, 0);
+  const activeCount = clientProperties.filter(p => p.status === 'Active').length;
+  const delayedCount = clientProperties.filter(p => p.status === 'Delayed' || p.status === 'Litigation').length;
 
   const openAdd = () => {
     setEditingId(null);
@@ -44,7 +38,7 @@ export default function ClientProfilePage() {
     setIsAdding(true);
   };
 
-  const openEdit = (prop: any) => {
+  const openEdit = (prop: PropertyData) => {
     setEditingId(prop.id);
     setNewPropName(prop.name); setNewPropType(prop.type); setNewPropLocation(prop.location); setNewPropTenant(prop.tenant !== "N/A" ? prop.tenant : ""); setNewPropFreq(prop.paymentFreq); setNewPropStatus(prop.status); setNewPropRev(prop.revenue.toString()); setUploadedFiles(prop.documents || []);
     setIsAdding(true);
@@ -52,15 +46,18 @@ export default function ClientProfilePage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setUploadedFiles([...uploadedFiles, ...Array.from(e.target.files)]);
+      // Just mock storing file metadata
+      const newFiles = Array.from(e.target.files).map(f => ({ name: f.name, size: f.size }));
+      setUploadedFiles([...uploadedFiles, ...newFiles]);
     }
   };
 
   const handleSaveProperty = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPropName && newPropLocation) {
-      const propertyData = {
+      const propertyData: PropertyData = {
         id: editingId || Date.now(),
+        clientId: clientId,
         type: newPropType,
         name: newPropName,
         location: newPropLocation,
@@ -80,6 +77,10 @@ export default function ClientProfilePage() {
     }
   };
 
+  if (!client) {
+    return <div className="p-10 text-center text-slate-500">Client not found. <Link href="/clients" className="text-blue-600 underline">Go back</Link></div>;
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center space-x-4 mb-2">
@@ -88,16 +89,40 @@ export default function ClientProfilePage() {
         </Link>
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-            Client Portfolio 
-            <span className="text-sm font-bold bg-slate-100 px-2.5 py-1 rounded-md text-slate-500 border border-slate-200">ID: {clientId}</span>
+            {client.name}'s Portfolio
           </h1>
+          <p className="text-slate-500 text-sm font-medium mt-1">Manage assets and contracts for this client</p>
+        </div>
+      </div>
+
+      {/* Mini Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><DollarSign className="w-6 h-6" /></div>
+          <div>
+            <p className="text-sm font-semibold text-slate-500">Expected Total Revenue</p>
+            <p className="text-2xl font-bold text-slate-900">${totalRevenue.toLocaleString()}</p>
+          </div>
+        </div>
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><TrendingUp className="w-6 h-6" /></div>
+          <div>
+            <p className="text-sm font-semibold text-slate-500">Active Properties</p>
+            <p className="text-2xl font-bold text-emerald-600">{activeCount}</p>
+          </div>
+        </div>
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+          <div className="p-3 bg-rose-50 text-rose-600 rounded-xl"><AlertTriangle className="w-6 h-6" /></div>
+          <div>
+            <p className="text-sm font-semibold text-slate-500">Issues / Delayed</p>
+            <p className="text-2xl font-bold text-rose-600">{delayedCount}</p>
+          </div>
         </div>
       </div>
 
       <div className="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">Registered Properties</h2>
-          <p className="text-slate-500 text-sm font-medium mt-0.5">Manage assets, tenants, and contracts</p>
         </div>
         <button onClick={openAdd} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl shadow-sm hover:bg-slate-800 transition-colors font-semibold flex items-center space-x-2 text-sm">
           <Plus className="w-4 h-4" />
@@ -184,7 +209,7 @@ export default function ClientProfilePage() {
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        {properties.map((prop) => (
+        {clientProperties.map((prop) => (
           <div key={prop.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between group">
             <div>
               <div className="flex justify-between items-start mb-3">
@@ -237,11 +262,11 @@ export default function ClientProfilePage() {
             </div>
           </div>
         ))}
-        {properties.length === 0 && !isAdding && (
+        {clientProperties.length === 0 && !isAdding && (
           <div className="col-span-full py-16 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-500">
             <Building className="w-10 h-10 text-slate-300 mb-3" />
             <p className="font-bold text-slate-600">No properties found</p>
-            <p className="text-sm font-medium mt-1">Register a new property to get started.</p>
+            <p className="text-sm font-medium mt-1">Register a new property for {client.name} to get started.</p>
           </div>
         )}
       </div>

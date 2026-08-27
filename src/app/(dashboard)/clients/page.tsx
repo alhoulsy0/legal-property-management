@@ -3,12 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Users, Plus, Building, ChevronRight, Search, Phone, Edit2 } from "lucide-react";
+import { useGlobal } from "../GlobalProvider";
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState([
-    { id: 1, name: "Acme Corp", phone: "+962 7 9123 4567", properties: 3, status: "Active" },
-    { id: 2, name: "Global Real Estate", phone: "+962 7 8123 4567", properties: 5, status: "Active" },
-  ]);
+  const { clients, setClients } = useGlobal();
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -129,6 +127,11 @@ export default function ClientsPage() {
                 </td>
               </tr>
             ))}
+            {clients.length === 0 && (
+              <tr>
+                <td colSpan={5} className="text-center py-10 text-slate-500">No clients added yet.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

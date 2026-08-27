@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Building2, Briefcase, LogOut } from "lucide-react";
+import { GlobalProvider } from "./GlobalProvider";
 
 export default function DashboardLayout({
   children,
@@ -65,7 +66,9 @@ export default function DashboardLayout({
       </nav>
       
       <main className="flex-1 max-w-[1400px] w-full mx-auto p-6 md:p-8 relative">
-        {children}
+        <GlobalProvider>
+          {children}
+        </GlobalProvider>
       </main>
     </div>
   );
