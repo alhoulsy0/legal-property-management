@@ -37,6 +37,9 @@ export default function ClientProfilePage() {
   const [newExpenseDesc, setNewExpenseDesc] = useState("");
   const [newExpenseAmt, setNewExpenseAmt] = useState("");
 
+  const [showIssuesFor, setShowIssuesFor] = useState<number | null>(null);
+  const [newIssueDesc, setNewIssueDesc] = useState("");
+
   const [showPayoutFor, setShowPayoutFor] = useState<number | null>(null);
   const [payoutMethod, setPayoutMethod] = useState("تحويل بنكي");
   const [txId, setTxId] = useState("");
@@ -143,6 +146,7 @@ export default function ClientProfilePage() {
         revenue: Number(newPropRev) || 0,
         documents: uploadedFiles,
         expenses: editingId ? properties.find(p=>p.id === editingId)?.expenses || [] : [],
+        issues: editingId ? properties.find(p=>p.id === editingId)?.issues || [] : [],
         startDate,
         endDate,
         nextRentDate,
@@ -171,6 +175,20 @@ export default function ClientProfilePage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleAddIssue = (e: React.FormEvent, propertyId: number) => {
+    e.preventDefault();
+    if (newIssueDesc) {
+      const newIssue = {
+        id: Date.now(),
+        description: newIssueDesc,
+        date: new Date().toLocaleDateString('ar-EG'),
+        status: "مفتوحة"
+      };
+      setProperties(properties.map(p => p.id === propertyId ? { ...p, issues: [...(p.issues || []), newIssue] } : p));
+      setNewIssueDesc("");
+    }
   };
 
   const handleAddExpense = (e: React.FormEvent, propertyId: number) => {
@@ -509,10 +527,13 @@ export default function ClientProfilePage() {
             
             <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
               <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowPayoutFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
+                <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showIssuesFor === prop.id ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
+                  <AlertTriangle className="w-4 h-4" /> قضايا / مشاكل
+                </button>
+                <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowIssuesFor(null); setShowPayoutFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
                   <Receipt className="w-4 h-4" /> إضافة مصروف
                 </button>
-                <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowExpensesFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showPayoutFor === prop.id ? 'bg-blue-600 text-white border-blue-600' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
+                <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowExpensesFor(null); setShowIssuesFor(null);}} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl transition-colors text-sm font-extrabold flex items-center justify-center gap-2 border shadow-sm ${showPayoutFor === prop.id ? 'bg-blue-600 text-white border-blue-600' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'}`}>
                   {prop.payoutStatus === 'Paid to Landlord' ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />} 
                   تحويل للمالك
                 </button>
@@ -521,6 +542,32 @@ export default function ClientProfilePage() {
                 <p className="text-xs font-extrabold text-slate-500 tracking-wider mb-1">الإيجار المتوقع</p>
                 <div className="text-2xl font-black text-slate-900">${prop.revenue.toLocaleString()}</div>
               </div>
+            </div>
+
+              {showIssuesFor === prop.id && (
+                <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
+                  <h4 className="text-sm font-extrabold text-amber-800 mb-4 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-600" /> القضايا والمشاكل القانونية</h4>
+                  <div className="space-y-3 mb-5 max-h-48 overflow-y-auto custom-scrollbar">
+                    {(prop.issues || []).length === 0 ? (
+                       <p className="text-sm text-slate-500 font-semibold italic">لا توجد قضايا أو مشاكل مسجلة.</p>
+                    ) : (
+                      prop.issues?.map(issue => (
+                        <div key={issue.id} className="flex justify-between items-center bg-amber-50 p-3 rounded-xl border border-amber-200">
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">{issue.description}</p>
+                            <p className="text-xs font-semibold text-slate-500 mt-0.5">{issue.date}</p>
+                          </div>
+                          <span className="font-extrabold text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-md">{issue.status}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <form onSubmit={(e) => handleAddIssue(e, prop.id)} className="flex gap-3">
+                    <input type="text" placeholder="اكتب وصف المشكلة أو القضية (مثال: تأخر المستأجر 3 أشهر)..." value={newIssueDesc} onChange={(e) => setNewIssueDesc(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-slate-900 outline-none" required />
+                    <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 text-sm shadow-sm whitespace-nowrap">حفظ الملاحظة</button>
+                  </form>
+                </div>
+              )}
 
               {showExpensesFor === prop.id && (
                 <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">

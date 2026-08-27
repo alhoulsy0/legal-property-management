@@ -28,8 +28,9 @@ export type PropertyData = {
   status: string;
   paymentFreq: string;
   revenue: number;
-  documents: any[];
-  expenses: ExpenseData[];
+  documents?: any[];
+  expenses?: ExpenseData[];
+  issues?: { id: number; description: string; date: string; status: string }[];
   startDate?: string;
   endDate?: string;
   nextRentDate?: string;
