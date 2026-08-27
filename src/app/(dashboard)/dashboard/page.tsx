@@ -15,7 +15,7 @@ export default function DashboardPage() {
   let netCashFlow = expectedRevenue - totalExpenses;
   
   // Dynamic Alerts
-  let alerts = [];
+  let alerts: any[] = [];
   properties.forEach(p => {
     if (p.status === "Delayed") {
       alerts.push({ id: `d-${p.id}`, type: "delayed", message: `Rent for ${p.name} is delayed.`, priority: "medium" });
