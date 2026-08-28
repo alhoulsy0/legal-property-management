@@ -442,13 +442,13 @@ export default function ClientProfilePage() {
   };
 
   if (!client) {
-    return <div className="p-10 text-center font-bold text-slate-500">لم يتم العثور على الموكل. <Link href="/clients" className="text-blue-600 underline">العودة</Link></div>;
+    return <div className="p-10 text-center font-bold text-slate-700">لم يتم العثور على الموكل. <Link href="/clients" className="text-blue-600 underline">العودة</Link></div>;
   }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center gap-4 mb-2">
-        <Link href="/clients" className="p-2.5 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-slate-500 hover:text-slate-900 border border-slate-300">
+        <Link href="/clients" className="p-2.5 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-slate-700 hover:text-slate-900 border border-slate-300">
           <ArrowRight className="w-5 h-5" />
         </Link>
         <div>
@@ -463,14 +463,14 @@ export default function ClientProfilePage() {
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-5">
           <div className="p-4 bg-slate-900 text-white rounded-2xl shadow-md"><DollarSign className="w-6 h-6" /></div>
           <div>
-            <p className="text-sm font-bold text-slate-500">الإيراد المتوقع</p>
+            <p className="text-sm font-bold text-slate-700">الإيراد المتوقع</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-1">د.أ {totalRevenue.toLocaleString()}</p>
           </div>
         </div>
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-5">
           <div className="p-4 bg-rose-100 text-rose-700 rounded-2xl shadow-sm"><TrendingDown className="w-6 h-6" /></div>
           <div>
-            <p className="text-sm font-bold text-slate-500">إجمالي المصروفات</p>
+            <p className="text-sm font-bold text-slate-700">إجمالي المصروفات</p>
             <p className="text-2xl font-extrabold text-rose-600 mt-1">د.أ {totalExpenses.toLocaleString()}</p>
           </div>
         </div>
@@ -484,7 +484,7 @@ export default function ClientProfilePage() {
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-5">
           <div className="p-4 bg-amber-100 text-amber-700 rounded-2xl shadow-sm"><AlertTriangle className="w-6 h-6" /></div>
           <div>
-            <p className="text-sm font-bold text-slate-500">تأخير / نزاعات</p>
+            <p className="text-sm font-bold text-slate-700">تأخير / نزاعات</p>
             <p className="text-2xl font-extrabold text-amber-600 mt-1">{delayedCount}</p>
           </div>
         </div>
@@ -512,7 +512,7 @@ export default function ClientProfilePage() {
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
               <div>
                 <h3 className="text-2xl font-extrabold text-slate-900">{client.name} - السجل المالي</h3>
-                <p className="text-sm text-slate-500 font-bold mt-1">كشف حساب موحد للإيرادات والمصروفات</p>
+                <p className="text-sm text-slate-700 font-bold mt-1">كشف حساب موحد للإيرادات والمصروفات</p>
               </div>
               <div className="flex gap-3">
                 <button onClick={exportPDF} className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl hover:bg-emerald-700 font-bold text-sm shadow-md flex items-center gap-2">
@@ -540,7 +540,7 @@ export default function ClientProfilePage() {
                 {/* Overall Summary */}
                 <div className="grid grid-cols-3 gap-6 mb-10">
                   <div className="p-6 bg-slate-50 border-2 border-slate-200 rounded-2xl text-center">
-                    <p className="text-sm font-black text-slate-500 uppercase tracking-wider mb-2">إجمالي قيمة العقود</p>
+                    <p className="text-sm font-black text-slate-700 uppercase tracking-wider mb-2">إجمالي قيمة العقود</p>
                     <p className="text-3xl font-black text-slate-900">د.أ {totalRevenue.toLocaleString()}</p>
                   </div>
                   <div className="p-6 bg-rose-50 border-2 border-rose-200 rounded-2xl text-center">
@@ -555,7 +555,7 @@ export default function ClientProfilePage() {
 
                 {/* Per-Property Breakdown */}
                 {clientProperties.length === 0 ? (
-                   <p className="text-center text-slate-500 font-bold py-10">لا توجد عقارات مسجلة لهذا العميل.</p>
+                   <p className="text-center text-slate-700 font-bold py-10">لا توجد عقارات مسجلة لهذا العميل.</p>
                 ) : (
                    clientProperties.map(prop => {
                       const propCollected = (prop.rentCycles || []).reduce((acc, c) => c.receivedFromTenant ? acc + c.amount : acc, 0);
@@ -573,14 +573,14 @@ export default function ClientProfilePage() {
                                   <p className="text-sm font-bold text-slate-600 mt-1">تاريخ العقد: <span className="text-slate-900">{prop.startDate} - {prop.endDate}</span></p>
                                </div>
                                <div className="text-left bg-slate-50 p-4 rounded-xl border border-slate-200 min-w-[250px]">
-                                  <p className="text-xs font-bold text-slate-500 mb-1">قيمة العقد الشاملة</p>
+                                  <p className="text-xs font-bold text-slate-700 mb-1">قيمة العقد الشاملة</p>
                                   <p className="text-2xl font-black text-indigo-700 mb-3">د.أ {prop.revenue.toLocaleString()}</p>
                                   <div className="grid grid-cols-2 gap-4 text-sm font-bold">
                                      <div><span className="text-emerald-600 block mb-1">المحصل</span> د.أ {propCollected.toLocaleString()}</div>
                                      <div><span className="text-rose-600 block mb-1">المصروفات</span> د.أ {propExpenses.toLocaleString()}</div>
                                   </div>
                                   <div className="mt-3 pt-3 border-t border-slate-200">
-                                     <span className="text-slate-500 block mb-1 text-xs">المتبقي للتحصيل</span>
+                                     <span className="text-slate-700 block mb-1 text-xs">المتبقي للتحصيل</span>
                                      <span className="text-slate-900 font-black">د.أ {propRemaining.toLocaleString()}</span>
                                   </div>
                                </div>
@@ -600,20 +600,32 @@ export default function ClientProfilePage() {
                                      </thead>
                                      <tbody>
                                         {(prop.rentCycles || []).length === 0 ? (
-                                           <tr><td colSpan={3} className="p-4 text-center text-slate-500 font-bold">لا توجد دفعات.</td></tr>
-                                        ) : prop.rentCycles?.map(cycle => (
+                                           <tr><td colSpan={3} className="p-4 text-center text-slate-700 font-bold">لا توجد دفعات.</td></tr>
+                                        ) : prop.rentCycles?.map(cycle => {
+                                           const dLeft = calculateDays(cycle.dueDate);
+                                           const isLate = dLeft !== null && dLeft < 0;
+                                           const isToday = dLeft === 0;
+                                           const isSoon = dLeft !== null && dLeft > 0 && dLeft <= 5;
+                                           return (
                                            <tr key={cycle.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                                               <td className="p-3 font-bold text-slate-600">{cycle.dueDate}</td>
                                               <td className="p-3 font-black text-slate-900">د.أ {cycle.amount}</td>
                                               <td className="p-3 font-bold">
                                                  {cycle.receivedFromTenant ? (
                                                     <span className="text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider">مُحصل</span>
+                                                 ) : isLate ? (
+                                                    <span className="text-rose-700 bg-rose-100 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider">متأخر</span>
+                                                 ) : isToday ? (
+                                                    <span className="text-blue-700 bg-blue-100 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider">اليوم</span>
+                                                 ) : isSoon ? (
+                                                    <span className="text-amber-700 bg-amber-100 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider">قريباً</span>
                                                  ) : (
-                                                    <span className="text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider">غير محصل</span>
+                                                    <span className="text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider">مستحق لاحقاً</span>
                                                  )}
                                               </td>
                                            </tr>
-                                        ))}
+                                        )
+                                     })}
                                      </tbody>
                                   </table>
                                </div>
@@ -632,7 +644,7 @@ export default function ClientProfilePage() {
                                         </thead>
                                         <tbody>
                                            {(prop.expenses || []).length === 0 ? (
-                                              <tr><td colSpan={3} className="p-4 text-center text-slate-500 font-bold">لا توجد مصروفات.</td></tr>
+                                              <tr><td colSpan={3} className="p-4 text-center text-slate-700 font-bold">لا توجد مصروفات.</td></tr>
                                            ) : prop.expenses?.map(exp => (
                                               <tr key={exp.id} className="border-b border-slate-100 last:border-0">
                                                  <td className="p-3 font-bold text-slate-600">{exp.date}</td>
@@ -648,7 +660,7 @@ export default function ClientProfilePage() {
                                   <div>
                                      <h5 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-600"/> القضايا والملاحظات القانونية</h5>
                                      {(prop.issues || []).length === 0 ? (
-                                        <p className="text-sm font-bold text-slate-500 p-4 bg-slate-50 rounded-lg text-center">لا توجد قضايا مسجلة.</p>
+                                        <p className="text-sm font-bold text-slate-700 p-4 bg-slate-50 rounded-lg text-center">لا توجد قضايا مسجلة.</p>
                                      ) : (
                                         <div className="space-y-3">
                                            {prop.issues?.map(issue => (
@@ -657,7 +669,7 @@ export default function ClientProfilePage() {
                                                    <p className="font-bold text-slate-900 text-sm">{issue.description}</p>
                                                    <span className={`px-2 py-1 text-[10px] font-black rounded-md ${issue.status === 'مفتوحة' ? 'bg-amber-200 text-amber-900' : 'bg-emerald-200 text-emerald-900'}`}>{issue.status}</span>
                                                  </div>
-                                                 <p className="text-xs font-bold text-slate-500">{issue.date}</p>
+                                                 <p className="text-xs font-bold text-slate-700">{issue.date}</p>
                                               </div>
                                            ))}
                                         </div>
@@ -738,9 +750,9 @@ export default function ClientProfilePage() {
                 <label className="block text-sm font-bold text-slate-800 mb-2">إرفاق مستندات (عقود، هويات، أحكام)</label>
                 <div className="relative w-full border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-blue-50 transition-colors cursor-pointer group">
                   <input type="file" multiple onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer placeholder-slate-500" />
-                  <UploadCloud className="w-10 h-10 text-slate-400 group-hover:text-blue-600 mb-3 transition-colors" />
+                  <UploadCloud className="w-10 h-10 text-slate-600 group-hover:text-blue-600 mb-3 transition-colors" />
                   <p className="text-sm font-extrabold text-slate-700">انقر للرفع أو اسحب الملفات هنا</p>
-                  <p className="text-xs font-semibold text-slate-500 mt-1">PDF, DOCX حد أقصى 10MB</p>
+                  <p className="text-xs font-semibold text-slate-700 mt-1">PDF, DOCX حد أقصى 10MB</p>
                 </div>
                 {uploadedFiles.length > 0 && (
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -748,7 +760,7 @@ export default function ClientProfilePage() {
                       <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-800 bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm">
                         <FileText className="w-5 h-5 text-blue-600 shrink-0" />
                         <span className="truncate flex-1">{file.name}</span>
-                        <span className="text-xs font-semibold text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                        <span className="text-xs font-semibold text-slate-600">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                       </div>
                     ))}
                   </div>
@@ -802,17 +814,17 @@ export default function ClientProfilePage() {
                  </div>
                  <div className="min-w-0">
                    <h3 className="text-base font-extrabold text-slate-900 truncate">{prop.name}</h3>
-                   <p className="text-sm font-bold text-slate-500 truncate mt-0.5">{prop.type} • {prop.location}</p>
+                   <p className="text-sm font-bold text-slate-700 truncate mt-0.5">{prop.type} • {prop.location}</p>
                  </div>
                </div>
 
                <div className={`grid grid-cols-2 md:grid-cols-4 gap-3 w-full lg:flex-1 bg-slate-50 lg:bg-transparent p-3 lg:p-0 rounded-2xl lg:rounded-none border border-slate-100 lg:border-0 ${isExpanded ? 'hidden lg:grid' : ''}`}>
                  <div>
-                   <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">المستأجر</p>
+                   <p className="text-xs font-bold text-slate-600 mb-0.5 uppercase tracking-wider">المستأجر</p>
                    <p className="text-sm font-bold text-slate-800 truncate">{prop.tenant}</p>
                  </div>
                  <div>
-                   <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الاستحقاق القادم</p>
+                   <p className="text-xs font-bold text-slate-600 mb-0.5 uppercase tracking-wider">الاستحقاق القادم</p>
                     <p className={`text-sm font-bold ${isRentLate ? 'text-rose-600' : 'text-slate-800'}`}>
                       {prop.nextRentDate || "غير محدد"}
                       {isRentLate && <span className="ml-1.5 text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-md">متأخر</span>}
@@ -821,12 +833,12 @@ export default function ClientProfilePage() {
                     </p>
                  </div>
                  <div>
-                   <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">قيمة الدفعة</p>
+                   <p className="text-xs font-bold text-slate-600 mb-0.5 uppercase tracking-wider">قيمة الدفعة</p>
                    <p className="text-sm font-black text-indigo-700">د.أ {prop.rentAmount?.toLocaleString() || prop.revenue?.toLocaleString()}</p>
                  </div>
                  <div className="flex items-center justify-between">
                     <div className="w-full">
-                      <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider block lg:hidden">الحالة</p>
+                      <p className="text-xs font-bold text-slate-600 mb-0.5 uppercase tracking-wider block lg:hidden">الحالة</p>
                       <span className={`px-2 py-1 text-xs font-extrabold rounded-lg shadow-sm border whitespace-nowrap ${
                         prop.status === 'نشط' || prop.status === 'Active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                         prop.status === 'متأخر' || prop.status === 'Delayed' ? 'bg-amber-50 text-amber-800 border-amber-200' :
@@ -852,7 +864,7 @@ export default function ClientProfilePage() {
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                        <p className="text-xs font-bold text-slate-500 mb-1">إجمالي قيمة العقد</p>
+                        <p className="text-xs font-bold text-slate-700 mb-1">إجمالي قيمة العقد</p>
                         <p className="text-lg font-black text-slate-900">د.أ {totalExpected.toLocaleString()}</p>
                      </div>
                      <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 shadow-sm">
@@ -864,7 +876,7 @@ export default function ClientProfilePage() {
                         <p className="text-lg font-black text-amber-600">د.أ {totalExpenses.toLocaleString()}</p>
                      </div>
                      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                        <p className="text-xs font-bold text-slate-500 mb-1">المتبقي للتحصيل</p>
+                        <p className="text-xs font-bold text-slate-700 mb-1">المتبقي للتحصيل</p>
                         <p className="text-lg font-black text-rose-600">د.أ {remaining.toLocaleString()}</p>
                      </div>
                   </div>
@@ -948,7 +960,7 @@ export default function ClientProfilePage() {
                         <div className="p-0 overflow-x-auto max-h-96 custom-scrollbar">
                           <table className="w-full text-right border-collapse">
                             <thead className="sticky top-0 bg-slate-50">
-                              <tr className="text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                              <tr className="text-slate-700 text-xs uppercase tracking-wider border-b border-slate-100">
                                 <th className="py-3 px-4 font-extrabold">المبلغ</th>
                                 <th className="py-3 px-4 font-extrabold">الاستحقاق</th>
                                 <th className="py-3 px-4 font-extrabold">التحصيل</th>
@@ -997,7 +1009,7 @@ export default function ClientProfilePage() {
                                         });
                                         setProperties(updated);
                                       }} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600" />
-                                      <span className={`text-xs ${cycle.receivedFromTenant ? 'text-emerald-600 font-extrabold' : 'text-slate-400'}`}>تم التحصيل</span>
+                                      <span className={`text-xs ${cycle.receivedFromTenant ? 'text-emerald-600 font-extrabold' : 'text-slate-600'}`}>تم التحصيل</span>
                                     </label>
                                   </td>
                                   <td className="py-3 px-4 text-sm font-bold">
@@ -1012,7 +1024,7 @@ export default function ClientProfilePage() {
                                         });
                                         setProperties(updated);
                                       }} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600" disabled={!cycle.receivedFromTenant} />
-                                      <span className={`text-xs ${cycle.paidToLandlord ? 'text-blue-600 font-extrabold' : 'text-slate-400'}`}>محول</span>
+                                      <span className={`text-xs ${cycle.paidToLandlord ? 'text-blue-600 font-extrabold' : 'text-slate-600'}`}>محول</span>
                                     </label>
                                   </td>
                                 </tr>
@@ -1031,13 +1043,13 @@ export default function ClientProfilePage() {
                            <div className="p-4">
                              <div className="space-y-3 max-h-48 overflow-y-auto custom-scrollbar mb-4">
                                 {(prop.expenses || []).length === 0 ? (
-                                   <p className="text-sm text-slate-500 font-semibold italic">لا توجد مصروفات مسجلة.</p>
+                                   <p className="text-sm text-slate-700 font-semibold italic">لا توجد مصروفات مسجلة.</p>
                                 ) : (
                                   prop.expenses?.map(exp => (
                                     <div key={exp.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                                       <div>
                                         <p className="text-sm font-bold text-slate-800">{exp.description}</p>
-                                        <p className="text-xs font-semibold text-slate-400 mt-1">{exp.date}</p>
+                                        <p className="text-xs font-semibold text-slate-600 mt-1">{exp.date}</p>
                                       </div>
                                       <p className="text-sm font-black text-rose-600">د.أ {exp.amount}</p>
                                     </div>
@@ -1061,13 +1073,13 @@ export default function ClientProfilePage() {
                            <div className="p-4">
                              <div className="space-y-3 max-h-48 overflow-y-auto custom-scrollbar mb-4">
                                 {(prop.issues || []).length === 0 ? (
-                                   <p className="text-sm text-slate-500 font-semibold italic">لا توجد قضايا أو مشاكل مسجلة.</p>
+                                   <p className="text-sm text-slate-700 font-semibold italic">لا توجد قضايا أو مشاكل مسجلة.</p>
                                 ) : (
                                   prop.issues?.map(issue => (
                                     <div key={issue.id} className="flex justify-between items-center bg-amber-50 p-3 rounded-xl border border-amber-100">
                                       <div>
                                         <p className="text-sm font-bold text-slate-800">{issue.description}</p>
-                                        <p className="text-xs font-semibold text-slate-400 mt-1">{issue.date}</p>
+                                        <p className="text-xs font-semibold text-slate-600 mt-1">{issue.date}</p>
                                       </div>
                                       <div className="flex gap-2">
                                         <span className={`px-2 py-1 text-[10px] font-extrabold rounded-md border ${issue.status === 'مفتوحة' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'}`}>{issue.status}</span>
@@ -1118,7 +1130,7 @@ export default function ClientProfilePage() {
                             )}
                             <div>
                               <label className="block text-xs font-bold text-slate-700 mb-1.5">إرفاق إيصال / مخالصة (اختياري)</label>
-                              <input type="file" onChange={(e) => setPayoutDocName(e.target.files?.[0]?.name || "")} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer" />
+                              <input type="file" onChange={(e) => setPayoutDocName(e.target.files?.[0]?.name || "")} className="w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer" />
                             </div>
                             <button type="submit" className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 text-sm shadow-sm transition-colors">
                               تأكيد تحويل الصافي للمالك
@@ -1134,10 +1146,10 @@ export default function ClientProfilePage() {
           )})}
 
         {clientProperties.length === 0 && !isAdding && (
-          <div className="col-span-full py-20 bg-slate-50 border-2 border-dashed border-slate-300 rounded-3xl flex flex-col items-center justify-center text-slate-500">
-            <Building className="w-12 h-12 text-slate-400 mb-4" />
+          <div className="col-span-full py-20 bg-slate-50 border-2 border-dashed border-slate-300 rounded-3xl flex flex-col items-center justify-center text-slate-700">
+            <Building className="w-12 h-12 text-slate-600 mb-4" />
             <p className="text-xl font-extrabold text-slate-700">لا توجد عقارات مسجلة للموكل</p>
-            <p className="text-sm font-semibold mt-2 text-slate-500">قم بتسجيل عقار جديد لبدء إدارة المحفظة.</p>
+            <p className="text-sm font-semibold mt-2 text-slate-700">قم بتسجيل عقار جديد لبدء إدارة المحفظة.</p>
           </div>
         )}
       </div>
@@ -1155,7 +1167,7 @@ export default function ClientProfilePage() {
                   {confirmAction.type === 'deleteProperty' && 'تأكيد الحذف'}
                   {confirmAction.type === 'duplicateProperty' && 'تأكيد النسخ'}
                 </h3>
-                <p className="text-sm font-bold text-slate-500 mt-1">
+                <p className="text-sm font-bold text-slate-700 mt-1">
                   {confirmAction.type === 'deleteProperty' && 'هل أنت متأكد من رغبتك في حذف هذا العقار؟ لا يمكن التراجع عن هذا الإجراء.'}
                   {confirmAction.type === 'duplicateProperty' && 'هل تريد إنشاء نسخة جديدة من هذا العقار؟'}
                 </p>
