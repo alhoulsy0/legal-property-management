@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
             <Link href="/clients" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition-all font-bold group">
               <Users className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
-              الموكلين والوكالات
+              إدارة الأملاك والعقارات
             </Link>
             <Link href="/cases" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition-all font-bold group">
               <Scale className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />

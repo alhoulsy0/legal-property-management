@@ -62,8 +62,8 @@ export default function ClientsPage() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">سجل الموكلين</h1>
-          <p className="text-slate-600 mt-1 text-sm font-bold">إدارة بيانات الملاك والموكلين وعقاراتهم</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">إدارة الأملاك والعقارات</h1>
+          <p className="text-slate-655 mt-1 text-sm font-bold">إدارة بيانات الملاك والموكلين وعقاراتهم التابعة</p>
         </div>
         <button onClick={openAdd} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl shadow-md hover:bg-slate-800 transition-colors font-bold flex items-center gap-2 text-sm">
           <Plus className="w-5 h-5" />
