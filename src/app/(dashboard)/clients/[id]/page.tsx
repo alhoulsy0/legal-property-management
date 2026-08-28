@@ -244,10 +244,12 @@ export default function ClientProfilePage() {
       }
       if (dur <= 0 && startDate) dur = 1;
 
-      let generatedCycles = editingId ? properties.find(p=>p.id === editingId)?.rentCycles || [] : [];
-      if ((!editingId || generatedCycles.length === 0) && startDate && newPropRentAmount) {
+      const oldProp = editingId ? properties.find(p=>p.id === editingId) : null;
+      let oldCycles = oldProp?.rentCycles || [];
+
+      let generatedCycles = oldCycles;
+      if (startDate && newPropRentAmount) {
         generatedCycles = [];
-        let sDate = new Date(startDate);
         let monthStep = 1;
         let cycleCount = dur;
 
@@ -283,12 +285,14 @@ export default function ClientProfilePage() {
           const m = String(d.getMonth() + 1).padStart(2, '0');
           const dy = String(d.getDate()).padStart(2, '0');
 
+          const oldCycle = oldCycles[i];
+
           generatedCycles.push({
-            id: Date.now().toString() + "-" + i + "-" + Math.random().toString(36).substr(2, 5),
+            id: oldCycle ? oldCycle.id : Date.now().toString() + "-" + i + "-" + Math.random().toString(36).substr(2, 5),
             dueDate: `${y}-${m}-${dy}`,
             amount: Number(newPropRentAmount),
-            receivedFromTenant: false,
-            paidToLandlord: false
+            receivedFromTenant: oldCycle ? oldCycle.receivedFromTenant : false,
+            paidToLandlord: oldCycle ? oldCycle.paidToLandlord : false
           });
         }
       }
