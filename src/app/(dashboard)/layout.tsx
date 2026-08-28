@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Scale, LogOut, LayoutDashboard, Users, FileText, Calendar, DollarSign } from "lucide-react";
 import { GlobalProvider } from "./GlobalProvider";
@@ -37,10 +39,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="p-4 border-t border-slate-800">
-            <Link href="/login" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-950/30 hover:text-rose-400 transition-all font-bold text-slate-400 group">
+            <button 
+              onClick={() => {
+                document.cookie = "auth_token=; max-age=0; path=/";
+                window.location.href = "/login";
+              }} 
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-950/30 hover:text-rose-400 transition-all font-bold text-slate-400 group text-right cursor-pointer"
+            >
               <LogOut className="w-5 h-5 group-hover:text-rose-500 transition-colors" />
               تسجيل الخروج
-            </Link>
+            </button>
           </div>
         </aside>
 
