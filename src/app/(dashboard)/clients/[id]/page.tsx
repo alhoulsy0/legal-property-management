@@ -540,91 +540,150 @@ export default function ClientProfilePage() {
             </div>
             
             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
-              <div id="ledger-report" className="bg-white p-6 rounded-xl">
+                            <div id="ledger-report" className="bg-white p-8 rounded-2xl print:p-0 print:bg-transparent">
                 {/* Print Title */}
-                <div className="mb-6 border-b border-slate-200 pb-4">
-                  <h3 className="text-2xl font-extrabold text-slate-900">{client?.name} - كشف حساب مفصل</h3>
-                  <p className="text-sm text-slate-500 font-bold mt-1">تاريخ الإصدار: {new Date().toLocaleDateString()}</p>
+                <div className="mb-8 border-b-2 border-slate-800 pb-4 flex justify-between items-end">
+                  <div>
+                    <h3 className="text-3xl font-black text-slate-900 mb-2">{client?.name} - الكشف المالي الشامل</h3>
+                    <p className="text-sm text-slate-600 font-bold">تاريخ الإصدار: {new Date().toLocaleDateString()}</p>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-extrabold text-slate-800">إجمالي العقارات: {clientProperties.length}</p>
+                  </div>
                 </div>
                 
-                <div className="grid grid-cols-3 gap-5 mb-8">
-                <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl text-center">
-                  <p className="text-sm font-extrabold text-slate-500 tracking-wider mb-1">إجمالي الإيرادات</p>
-                  <p className="text-2xl font-black text-slate-900">د.أ {totalRevenue.toLocaleString()}</p>
+                {/* Overall Summary */}
+                <div className="grid grid-cols-3 gap-6 mb-10">
+                  <div className="p-6 bg-slate-50 border-2 border-slate-200 rounded-2xl text-center">
+                    <p className="text-sm font-black text-slate-500 uppercase tracking-wider mb-2">إجمالي قيمة العقود</p>
+                    <p className="text-3xl font-black text-slate-900">د.أ {totalRevenue.toLocaleString()}</p>
+                  </div>
+                  <div className="p-6 bg-rose-50 border-2 border-rose-200 rounded-2xl text-center">
+                    <p className="text-sm font-black text-rose-600 uppercase tracking-wider mb-2">إجمالي المصروفات</p>
+                    <p className="text-3xl font-black text-rose-700">د.أ {totalExpenses.toLocaleString()}</p>
+                  </div>
+                  <div className="p-6 bg-emerald-50 border-2 border-emerald-200 rounded-2xl text-center">
+                    <p className="text-sm font-black text-emerald-700 uppercase tracking-wider mb-2">صافي التحصيلات</p>
+                    <p className="text-3xl font-black text-emerald-700">د.أ {netCashFlow.toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="p-5 bg-rose-50 border border-rose-200 rounded-2xl text-center">
-                  <p className="text-sm font-extrabold text-rose-600 tracking-wider mb-1">إجمالي الخصومات</p>
-                  <p className="text-2xl font-black text-rose-700">د.أ {totalExpenses.toLocaleString()}</p>
-                </div>
-                <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-2xl text-center">
-                  <p className="text-sm font-extrabold text-emerald-700 tracking-wider mb-1">الصافي المستحق للمالك</p>
-                  <p className="text-2xl font-black text-emerald-700">د.أ {netCashFlow.toLocaleString()}</p>
-                </div>
-              </div>
 
-              <table className="w-full text-right border-collapse">
-                <thead>
-                  <tr className="bg-slate-100/50">
-                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">التاريخ</th>
-                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">النوع</th>
-                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">الوصف</th>
-                    <th className="py-3 px-4 text-left text-xs font-extrabold text-slate-600 border-b border-slate-200">المبلغ</th>
-                    <th className="py-3 px-4 text-left text-xs font-extrabold text-slate-600 border-b border-slate-200">الحالة</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {ledgerData.length === 0 ? (
-                    <tr><td colSpan={5} className="py-10 text-center text-slate-500 font-bold">لا توجد حركات مالية مسجلة.</td></tr>
-                  ) : (
-                    ledgerData.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3 px-4 text-sm font-bold text-slate-700">{item.date}</td>
-                        <td className="py-3 px-4 text-sm font-bold">
-                          <span className={`px-2.5 py-1 rounded-md text-xs tracking-wider ${item.type === 'إيراد' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>{item.type}</span>
-                        </td>
-                        <td className="py-3 px-4 text-sm font-semibold text-slate-900">{item.desc}</td>
-                        <td className={`py-3 px-4 text-left text-sm font-extrabold ${item.amount < 0 ? 'text-rose-600' : 'text-slate-900'}`}>{item.amount < 0 ? `-د.أ ${Math.abs(item.amount)}` : `$${item.amount}`}</td>
-                        <td className="py-3 px-4 text-left text-sm font-bold text-slate-500">{item.status}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                {/* Per-Property Breakdown */}
+                {clientProperties.length === 0 ? (
+                   <p className="text-center text-slate-500 font-bold py-10">لا توجد عقارات مسجلة لهذا العميل.</p>
+                ) : (
+                   clientProperties.map(prop => {
+                      const propCollected = (prop.rentCycles || []).reduce((acc, c) => c.receivedFromTenant ? acc + c.amount : acc, 0);
+                      const propExpenses = (prop.expenses || []).reduce((acc, c) => acc + c.amount, 0);
+                      const propRemaining = Math.max(0, prop.revenue - propCollected);
 
-              <h4 className="text-xl font-extrabold text-slate-900 mt-10 mb-4">تفاصيل العقارات والتحصيلات</h4>
-              <table className="w-full text-right border-collapse">
-                <thead>
-                  <tr className="bg-slate-100/50">
-                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">العقار</th>
-                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">قيمة العقد</th>
-                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">المحصل</th>
-                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">طريقة التحويل</th>
-                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">رقم الحوالة</th>
-                    <th className="py-3 px-4 text-left text-xs font-extrabold text-slate-600 border-b border-slate-200">المتبقي</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {clientProperties.length === 0 ? (
-                    <tr><td colSpan={6} className="py-10 text-center text-slate-500 font-bold">لا توجد عقارات مسجلة.</td></tr>
-                  ) : (
-                    clientProperties.map((p, idx) => {
-                      const collected = (p.rentCycles || []).reduce((acc, c) => c.receivedFromTenant ? acc + c.amount : acc, 0);
-                      const remaining = p.revenue - collected;
                       return (
-                        <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-3 px-4 text-sm font-bold text-slate-900">{p.name}</td>
-                          <td className="py-3 px-4 text-sm font-extrabold text-indigo-700">د.أ {p.revenue.toLocaleString()}</td>
-                          <td className="py-3 px-4 text-sm font-extrabold text-emerald-600">د.أ {collected.toLocaleString()}</td>
-                          <td className="py-3 px-4 text-sm font-bold text-slate-600">{p.payoutMethod || "-"}</td>
-                          <td className="py-3 px-4 text-sm font-bold text-slate-600">{p.payoutTransactionId || "-"}</td>
-                          <td className="py-3 px-4 text-left text-sm font-extrabold text-rose-600">د.أ {remaining.toLocaleString()}</td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                         <div key={prop.id} className="mb-12 border-2 border-slate-200 rounded-2xl p-6" style={{ pageBreakInside: 'avoid' }}>
+                            {/* Property Header */}
+                            <div className="flex flex-col lg:flex-row justify-between items-start mb-6 pb-6 border-b border-slate-200 gap-6">
+                               <div>
+                                  <h4 className="text-2xl font-black text-slate-900 mb-2">{prop.name}</h4>
+                                  <p className="text-sm font-bold text-slate-600">{prop.type} • {prop.location}</p>
+                                  <p className="text-sm font-bold text-slate-600 mt-1">المستأجر: <span className="text-slate-900">{prop.tenant}</span></p>
+                                  <p className="text-sm font-bold text-slate-600 mt-1">تاريخ العقد: <span className="text-slate-900">{prop.startDate} - {prop.endDate}</span></p>
+                               </div>
+                               <div className="text-left bg-slate-50 p-4 rounded-xl border border-slate-200 min-w-[250px]">
+                                  <p className="text-xs font-bold text-slate-500 mb-1">قيمة العقد الشاملة</p>
+                                  <p className="text-2xl font-black text-indigo-700 mb-3">د.أ {prop.revenue.toLocaleString()}</p>
+                                  <div className="grid grid-cols-2 gap-4 text-sm font-bold">
+                                     <div><span className="text-emerald-600 block mb-1">المحصل</span> د.أ {propCollected.toLocaleString()}</div>
+                                     <div><span className="text-rose-600 block mb-1">المصروفات</span> د.أ {propExpenses.toLocaleString()}</div>
+                                  </div>
+                                  <div className="mt-3 pt-3 border-t border-slate-200">
+                                     <span className="text-slate-500 block mb-1 text-xs">المتبقي للتحصيل</span>
+                                     <span className="text-slate-900 font-black">د.أ {propRemaining.toLocaleString()}</span>
+                                  </div>
+                               </div>
+                            </div>
 
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                               {/* Rent Cycles Table */}
+                               <div>
+                                  <h5 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2"><CalendarIcon className="w-5 h-5 text-indigo-600"/> جدول الدفعات الإيجارية</h5>
+                                  <table className="w-full text-right border-collapse text-sm">
+                                     <thead>
+                                        <tr className="bg-slate-100">
+                                           <th className="p-3 font-black text-slate-700 rounded-r-lg border-b border-slate-200">الاستحقاق</th>
+                                           <th className="p-3 font-black text-slate-700 border-b border-slate-200">المبلغ</th>
+                                           <th className="p-3 font-black text-slate-700 rounded-l-lg border-b border-slate-200">الحالة</th>
+                                        </tr>
+                                     </thead>
+                                     <tbody>
+                                        {(prop.rentCycles || []).length === 0 ? (
+                                           <tr><td colSpan={3} className="p-4 text-center text-slate-500 font-bold">لا توجد دفعات.</td></tr>
+                                        ) : prop.rentCycles?.map(cycle => (
+                                           <tr key={cycle.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                                              <td className="p-3 font-bold text-slate-600">{cycle.dueDate}</td>
+                                              <td className="p-3 font-black text-slate-900">د.أ {cycle.amount}</td>
+                                              <td className="p-3 font-bold">
+                                                 {cycle.receivedFromTenant ? (
+                                                    <span className="text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider">مُحصل</span>
+                                                 ) : (
+                                                    <span className="text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider">غير محصل</span>
+                                                 )}
+                                              </td>
+                                           </tr>
+                                        ))}
+                                     </tbody>
+                                  </table>
+                               </div>
+
+                               <div className="space-y-8">
+                                  {/* Expenses Table */}
+                                  <div>
+                                     <h5 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2"><Receipt className="w-5 h-5 text-rose-600"/> المصروفات والخصومات</h5>
+                                     <table className="w-full text-right border-collapse text-sm">
+                                        <thead>
+                                           <tr className="bg-rose-50">
+                                              <th className="p-3 font-black text-rose-900 rounded-r-lg border-b border-rose-100">التاريخ</th>
+                                              <th className="p-3 font-black text-rose-900 border-b border-rose-100">البيان</th>
+                                              <th className="p-3 font-black text-rose-900 rounded-l-lg border-b border-rose-100">المبلغ</th>
+                                           </tr>
+                                        </thead>
+                                        <tbody>
+                                           {(prop.expenses || []).length === 0 ? (
+                                              <tr><td colSpan={3} className="p-4 text-center text-slate-500 font-bold">لا توجد مصروفات.</td></tr>
+                                           ) : prop.expenses?.map(exp => (
+                                              <tr key={exp.id} className="border-b border-slate-100 last:border-0">
+                                                 <td className="p-3 font-bold text-slate-600">{exp.date}</td>
+                                                 <td className="p-3 font-bold text-slate-800">{exp.description}</td>
+                                                 <td className="p-3 font-black text-rose-600">د.أ {exp.amount}</td>
+                                              </tr>
+                                           ))}
+                                        </tbody>
+                                     </table>
+                                  </div>
+
+                                  {/* Legal Issues */}
+                                  <div>
+                                     <h5 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-600"/> القضايا والملاحظات القانونية</h5>
+                                     {(prop.issues || []).length === 0 ? (
+                                        <p className="text-sm font-bold text-slate-500 p-4 bg-slate-50 rounded-lg text-center">لا توجد قضايا مسجلة.</p>
+                                     ) : (
+                                        <div className="space-y-3">
+                                           {prop.issues?.map(issue => (
+                                              <div key={issue.id} className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex flex-col gap-2">
+                                                 <div className="flex justify-between items-start">
+                                                   <p className="font-bold text-slate-900 text-sm">{issue.description}</p>
+                                                   <span className={`px-2 py-1 text-[10px] font-black rounded-md ${issue.status === 'مفتوحة' ? 'bg-amber-200 text-amber-900' : 'bg-emerald-200 text-emerald-900'}`}>{issue.status}</span>
+                                                 </div>
+                                                 <p className="text-xs font-bold text-slate-500">{issue.date}</p>
+                                              </div>
+                                           ))}
+                                        </div>
+                                     )}
+                                  </div>
+                               </div>
+                            </div>
+                         </div>
+                      )
+                   })
+                )}
               </div>
             </div>
           </div>
