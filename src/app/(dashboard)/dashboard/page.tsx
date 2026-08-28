@@ -188,7 +188,7 @@ export default function DashboardPage() {
                 value={newTaskText}
                 onChange={e => setNewTaskText(e.target.value)}
                 placeholder="أضف مهمة جديدة..."
-                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 placeholder-slate-500"
+                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 placeholder-slate-600 text-slate-900"
               />
               <button type="submit" className="px-5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold shadow-sm">
                 <Plus className="w-5 h-5" />
@@ -199,8 +199,8 @@ export default function DashboardPage() {
               {tasks.length === 0 && <p className="text-sm font-bold text-slate-500 italic p-2 text-center">لا توجد مهام معلقة!</p>}
               {tasks.map(task => (
                 <div key={task.id} className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-300 border border-transparent hover:border-slate-200 cursor-pointer ${task.done ? 'bg-slate-100 opacity-50 scale-95' : 'bg-slate-50 hover:bg-slate-100'}`} onClick={() => toggleTask(task.id)}>
-                  <input type="checkbox" checked={task.done} readOnly className="w-5 h-5 rounded border-slate-300 text-blue-600 pointer-events-none placeholder-slate-500" />
-                  <span className={`text-sm font-bold ${task.done ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{task.text}</span>
+                  <input type="checkbox" checked={task.done} readOnly className="w-5 h-5 rounded border-slate-300 text-blue-600 pointer-events-none placeholder-slate-600" />
+                  <span className={`text-sm font-bold ${task.done ? 'text-slate-500 line-through' : 'text-slate-900'}`}>{task.text}</span>
                 </div>
               ))}
             </div>
@@ -231,68 +231,6 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-        <h2 className="text-xl font-extrabold text-slate-900 mb-6">إدارة سريعة للعقارات</h2>
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-right border-collapse">
-            <thead>
-              <tr className="bg-slate-50">
-                <th className="py-4 px-4 text-xs font-black text-slate-500 border-b border-slate-200 rounded-tr-xl">الموكل (المالك)</th>
-                <th className="py-4 px-4 text-xs font-black text-slate-500 border-b border-slate-200">العقار</th>
-                <th className="py-4 px-4 text-xs font-black text-slate-500 border-b border-slate-200">تاريخ الإيجار</th>
-                <th className="py-4 px-4 text-xs font-black text-slate-500 border-b border-slate-200">الحالة القانونية</th>
-                <th className="py-4 px-4 text-xs font-black text-slate-500 border-b border-slate-200 rounded-tl-xl">حالة التوريد للمالك</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {properties.map(prop => {
-                const client = clients.find(c => c.id === prop.clientId);
-                return (
-                  <tr key={prop.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-4 px-4 text-sm font-bold text-slate-800">{client?.name || 'غير معروف'}</td>
-                    <td className="py-4 px-4 text-sm font-bold text-slate-800">{prop.name}</td>
-                    <td className="py-4 px-4 text-sm font-semibold text-slate-600">{prop.nextRentDate || '-'}</td>
-                    <td className="py-4 px-4">
-                      <select 
-                        value={prop.status} 
-                        onChange={(e) => updatePropertyStatus(prop.id, 'status', e.target.value)}
-                        className={`text-xs font-black px-3 py-1.5 rounded-lg border outline-none cursor-pointer ${
-                          prop.status === 'نشط' || prop.status === 'Active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                          prop.status === 'متأخر' || prop.status === 'Delayed' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                          'bg-rose-50 text-rose-800 border-rose-200'
-                        }`}
-                      >
-                        <option value="نشط">نشط</option>
-                        <option value="متأخر">متأخر</option>
-                        <option value="قضية منظورة">قضية منظورة</option>
-                        <option value="محجوز">محجوز (موقوف)</option>
-                      </select>
-                    </td>
-                    <td className="py-4 px-4">
-                      <select 
-                        value={prop.payoutStatus === 'Paid to Landlord' ? 'تم التحويل' : 'قيد التحصيل'} 
-                        onChange={(e) => updatePropertyStatus(prop.id, 'payoutStatus', e.target.value === 'تم التحويل' ? 'Paid to Landlord' : 'قيد التحصيل')}
-                        className={`text-xs font-black px-3 py-1.5 rounded-lg border outline-none cursor-pointer ${
-                          prop.payoutStatus === 'Paid to Landlord' ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-slate-100 text-slate-700 border-slate-300'
-                        }`}
-                      >
-                        <option value="قيد التحصيل">قيد التحصيل</option>
-                        <option value="تم التحويل">تم التحويل (Paid)</option>
-                      </select>
-                    </td>
-                  </tr>
-                );
-              })}
-              {properties.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-sm font-bold text-slate-400">لا توجد عقارات مسجلة.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
