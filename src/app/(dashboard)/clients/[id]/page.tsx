@@ -932,7 +932,7 @@ export default function ClientProfilePage() {
                     <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200 mb-6 animate-in fade-in">
                       <p className="text-sm font-bold text-indigo-800 mb-2">أدخل مدة التمديد (بالأشهر):</p>
                       <div className="flex gap-2">
-                        <input type="number" min="1" value={extendMonths} onChange={e => setExtendMonths(Number(e.target.value))} className="w-24 px-3 py-2 border border-indigo-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-indigo-600" />
+                        <input type="number" min="1" value={extendMonths} onChange={e => setExtendMonths(Number(e.target.value))} className="w-24 px-3 py-2 border border-indigo-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-indigo-600 text-slate-900" />
                         <button onClick={() => handleExtendContract(prop.id)} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-700 transition-colors">تنفيذ التمديد</button>
                       </div>
                     </div>
@@ -944,11 +944,11 @@ export default function ClientProfilePage() {
                       <div className="flex flex-wrap gap-2">
                         <div className="flex-1 min-w-[200px]">
                            <label className="text-xs font-bold text-emerald-700 mb-1 block">القيمة الجديدة للدفعة (د.أ)</label>
-                           <input type="number" min="1" value={increaseRentAmount} onChange={e => setIncreaseRentAmount(e.target.value)} placeholder="مثال: 450" className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-600 placeholder-slate-600" />
+                           <input type="number" min="1" value={increaseRentAmount} onChange={e => setIncreaseRentAmount(e.target.value)} placeholder="مثال: 450" className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-600 placeholder-slate-600 text-slate-900" />
                         </div>
                         <div className="flex-1 min-w-[200px]">
                            <label className="text-xs font-bold text-emerald-700 mb-1 block">تطبق على الدفعات ابتداءً من تاريخ</label>
-                           <select value={increaseRentDate} onChange={e => setIncreaseRentDate(e.target.value)} className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-600">
+                           <select value={increaseRentDate} onChange={e => setIncreaseRentDate(e.target.value)} className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-600 text-slate-900">
                              <option value="">-- اختر الدفعة --</option>
                              {prop.rentCycles?.map(c => <option key={c.id} value={c.dueDate}>دفعة {c.dueDate} (حالية: د.أ {c.amount})</option>)}
                            </select>
@@ -1066,9 +1066,9 @@ export default function ClientProfilePage() {
                                 )}
                              </div>
                              <form onSubmit={(e) => handleAddExpense(e, prop.id)} className="flex flex-col gap-2 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                               <input type="text" value={newExpenseDesc} onChange={(e) => setNewExpenseDesc(e.target.value)} placeholder="وصف المصروف..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-slate-900" required />
+                               <input type="text" value={newExpenseDesc} onChange={(e) => setNewExpenseDesc(e.target.value)} placeholder="وصف المصروف..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-slate-900 text-slate-900 placeholder-slate-600" required />
                                <div className="flex gap-2">
-                                 <input type="number" value={newExpenseAmt} onChange={(e) => setNewExpenseAmt(e.target.value)} placeholder="المبلغ (د.أ)" className="w-2/3 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-slate-900" required />
+                                 <input type="number" value={newExpenseAmt} onChange={(e) => setNewExpenseAmt(e.target.value)} placeholder="المبلغ (د.أ)" className="w-2/3 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-slate-900 text-slate-900 placeholder-slate-600" required />
                                  <button type="submit" className="w-1/3 bg-slate-900 text-white rounded-lg text-sm font-bold hover:bg-slate-800 transition-colors">إضافة</button>
                                </div>
                              </form>
@@ -1101,7 +1101,7 @@ export default function ClientProfilePage() {
                                 )}
                              </div>
                              <form onSubmit={(e) => handleAddIssue(e, prop.id)} className="flex gap-2 bg-amber-50/30 p-3 rounded-xl border border-amber-100">
-                               <input type="text" value={newIssueDesc} onChange={(e) => setNewIssueDesc(e.target.value)} placeholder="وصف القضية أو المشكلة..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-amber-600" required />
+                               <input type="text" value={newIssueDesc} onChange={(e) => setNewIssueDesc(e.target.value)} placeholder="وصف القضية أو المشكلة..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-amber-600 text-slate-900 placeholder-slate-600" required />
                                <button type="submit" className="shrink-0 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-amber-700 transition-colors shadow-sm">إضافة القضية</button>
                              </form>
                            </div>
@@ -1126,7 +1126,7 @@ export default function ClientProfilePage() {
                           <form onSubmit={(e) => handlePayoutSubmit(e, prop.id)} className="space-y-4 bg-blue-50/50 p-5 rounded-xl border border-blue-100 max-w-2xl">
                             <div>
                               <label className="block text-xs font-bold text-slate-700 mb-1.5">طريقة التوريد</label>
-                              <select value={payoutMethod} onChange={(e) => setPayoutMethod(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm">
+                              <select value={payoutMethod} onChange={(e) => setPayoutMethod(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm text-slate-900">
                                 <option>تحويل بنكي</option>
                                 <option>نقدي</option>
                               </select>
@@ -1134,7 +1134,7 @@ export default function ClientProfilePage() {
                             {payoutMethod === "تحويل بنكي" && (
                               <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1.5">رقم الحوالة البنكية</label>
-                                <input type="text" placeholder="مثال: TXN-982374" value={txId} onChange={(e) => setTxId(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm" required />
+                                <input type="text" placeholder="مثال: TXN-982374" value={txId} onChange={(e) => setTxId(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm text-slate-900 placeholder-slate-600" required />
                               </div>
                             )}
                             <div>

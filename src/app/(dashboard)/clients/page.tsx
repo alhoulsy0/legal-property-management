@@ -78,7 +78,7 @@ export default function ClientsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-1.5">اسم الموكل</label>
-                <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all font-semibold text-slate-900 placeholder-slate-500 text-sm" required placeholder="مثال: شركة الأفق" />
+                <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all font-semibold text-slate-900 placeholder-slate-600 text-sm" required placeholder="مثال: شركة الأفق" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-1.5">رقم الهاتف</label>
@@ -86,7 +86,7 @@ export default function ClientsPage() {
                   <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-500">
                     <Phone className="w-5 h-5" />
                   </div>
-                  <input type="tel" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} className="w-full pr-11 pl-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all font-semibold text-slate-900 placeholder-slate-500 text-sm" placeholder="0790000000" />
+                  <input type="tel" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} className="w-full pr-11 pl-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all font-semibold text-slate-900 placeholder-slate-600 text-sm" placeholder="0790000000" />
                 </div>
               </div>
             </div>
@@ -111,7 +111,7 @@ export default function ClientsPage() {
         <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
           <div className="relative w-80">
             <Search className="w-5 h-5 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-            <input type="text" placeholder="بحث عن موكل..." className="w-full pr-11 pl-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900 shadow-sm" />
+            <input type="text" placeholder="بحث عن موكل..." className="w-full pr-11 pl-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900 shadow-sm" />
           </div>
         </div>
         <div className="overflow-x-auto">

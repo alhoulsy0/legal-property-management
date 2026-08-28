@@ -52,7 +52,7 @@ export default function LoginPage() {
                   placeholder="المحامي"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full pr-11 pl-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all text-slate-900 font-bold placeholder-slate-500 sm:text-sm"
+                  className="block w-full pr-11 pl-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all text-slate-900 font-bold placeholder-slate-600 sm:text-sm"
                   required
                 />
               </div>
@@ -69,7 +69,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pr-11 pl-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all text-slate-900 font-bold placeholder-slate-500 sm:text-sm"
+                  className="block w-full pr-11 pl-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all text-slate-900 font-bold placeholder-slate-600 sm:text-sm"
                   required
                 />
               </div>
