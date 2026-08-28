@@ -25,7 +25,7 @@ export default function ClientProfilePage() {
   const [newPropType, setNewPropType] = useState("سكني");
   const [newPropLocation, setNewPropLocation] = useState("");
   const [newPropTenant, setNewPropTenant] = useState("");
-  const [newPropFreq, setNewPropFreq] = useState("شهري (الأول من الشهر)");
+  const [newPropFreq, setNewPropFreq] = useState("شهري - نفس يوم البداية");
   const [newPropStatus, setNewPropStatus] = useState("نشط");
   const [newPropRev, setNewPropRev] = useState("");
   const [newPropRentAmount, setNewPropRentAmount] = useState("");
@@ -67,13 +67,28 @@ export default function ClientProfilePage() {
       lastDate = new Date(prop.endDate);
     }
 
-    for (let i = 1; i <= extendMonths; i++) {
+    const freq = prop.paymentFreq || "شهري";
+    let monthStep = 1;
+    if (freq.includes("ربع سنوي")) monthStep = 3;
+    else if (freq.includes("نصف سنوي")) monthStep = 6;
+    else if (freq.includes("سنوي")) monthStep = 12;
+
+    const cyclesToAdd = Math.ceil(extendMonths / monthStep);
+
+    for (let i = 1; i <= cyclesToAdd; i++) {
       const d = new Date(lastDate);
-      d.setMonth(d.getMonth() + i);
+      if (freq.includes("نهاية الشهر")) {
+         d.setMonth(d.getMonth() + (i * monthStep) + 1);
+         d.setDate(0);
+      } else {
+         d.setMonth(d.getMonth() + (i * monthStep));
+         if (freq.includes("بداية الشهر")) d.setDate(1);
+      }
+
       cycles.push({
         id: Date.now().toString() + "-" + Math.random().toString(36).substr(2, 9),
         dueDate: d.toISOString().split("T")[0],
-        amount: monthlyRent,
+        amount: monthlyRent * monthStep,
         receivedFromTenant: false,
         paidToLandlord: false
       });
@@ -209,13 +224,37 @@ export default function ClientProfilePage() {
       if ((!editingId || generatedCycles.length === 0) && startDate && newPropRentAmount) {
         generatedCycles = [];
         let sDate = new Date(startDate);
-        for (let i = 0; i < dur; i++) {
+        let monthStep = 1;
+        let cycleCount = dur;
+
+        if (newPropFreq.includes("ربع سنوي")) {
+           monthStep = 3;
+           cycleCount = Math.ceil(dur / 3);
+        } else if (newPropFreq.includes("نصف سنوي")) {
+           monthStep = 6;
+           cycleCount = Math.ceil(dur / 6);
+        } else if (newPropFreq.includes("سنوي")) {
+           monthStep = 12;
+           cycleCount = Math.ceil(dur / 12);
+        }
+
+        for (let i = 0; i < cycleCount; i++) {
           const d = new Date(sDate);
-          d.setMonth(d.getMonth() + i);
+          
+          if (newPropFreq.includes("نهاية الشهر")) {
+             d.setMonth(d.getMonth() + (i * monthStep) + 1);
+             d.setDate(0);
+          } else {
+             d.setMonth(d.getMonth() + (i * monthStep));
+             if (newPropFreq.includes("بداية الشهر")) {
+                 d.setDate(1);
+             }
+          }
+
           generatedCycles.push({
             id: Date.now().toString() + "-" + i + "-" + Math.random().toString(36).substr(2, 5),
             dueDate: d.toISOString().split("T")[0],
-            amount: Number(newPropRentAmount),
+            amount: Number(newPropRentAmount) * monthStep,
             receivedFromTenant: false,
             paidToLandlord: false
           });
@@ -508,8 +547,15 @@ export default function ClientProfilePage() {
               </div>
               
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">تاريخ استحقاق الإيجار القادم</label>
-                <input type="date" value={nextRentDate} onChange={(e) => setNextRentDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900" />
+                <label className="block text-sm font-bold text-slate-800 mb-2">دورية الدفع</label>
+                <select value={newPropFreq} onChange={(e) => setNewPropFreq(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900">
+                  <option>شهري - نفس يوم البداية</option>
+                  <option>شهري - بداية الشهر</option>
+                  <option>شهري - نهاية الشهر</option>
+                  <option>ربع سنوي (كل 3 أشهر)</option>
+                  <option>نصف سنوي (كل 6 أشهر)</option>
+                  <option>سنوي (كل 12 شهر)</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">قيمة الإيجار الشهري (د.أ)</label>
