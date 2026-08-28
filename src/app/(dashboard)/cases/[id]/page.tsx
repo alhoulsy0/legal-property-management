@@ -1,9 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useGlobal, HearingData, LegalFinancialData } from "../../GlobalProvider";
-import { Scale, Calendar, DollarSign, ArrowRight, Plus, FileText, AlertTriangle, ShieldCheck, CheckCircle2, FileUp, X, Clock } from "lucide-react";
+import { 
+  uploadCaseDocument, 
+  listCaseDocuments, 
+  getDocumentUrl, 
+  deleteCaseDocument, 
+  VaultFile, 
+  DocumentCategory 
+} from "@/lib/document_vault";
+import { 
+  Scale, 
+  Calendar, 
+  DollarSign, 
+  ArrowRight, 
+  Plus, 
+  FileText, 
+  AlertTriangle, 
+  ShieldCheck, 
+  CheckCircle2, 
+  FileUp, 
+  X, 
+  Clock, 
+  Trash2, 
+  Download, 
+  Loader2 
+} from "lucide-react";
 
 export default function CaseDetailPage() {
   const params = useParams();
@@ -34,6 +58,12 @@ export default function CaseDetailPage() {
 
   const totalPaid = caseFinancials.reduce((sum, f) => sum + f.amount, 0);
 
+  // Document Vault State
+  const [vaultCategory, setVaultCategory] = useState<DocumentCategory>("pleadings");
+  const [vaultFiles, setVaultFiles] = useState<VaultFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [vaultError, setVaultError] = useState("");
+
   // Modal State for Hearing Input Modal (ضبط الجلسة)
   const [showHearingModal, setShowHearingModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
@@ -50,6 +80,18 @@ export default function CaseDetailPage() {
   const [expenseType, setExpenseType] = useState<LegalFinancialData["type"]>("رسوم محاكم");
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split("T")[0]);
+
+  // Load documents from storage bucket based on active category
+  const loadVaultFiles = async () => {
+    if (currentCase) {
+      const files = await listCaseDocuments(currentCase.clientId, currentCase.id, vaultCategory);
+      setVaultFiles(files);
+    }
+  };
+
+  useEffect(() => {
+    loadVaultFiles();
+  }, [vaultCategory, currentCase]);
 
   if (!currentCase) {
     return (
@@ -113,6 +155,62 @@ export default function CaseDetailPage() {
     setExpenseAmount("");
   };
 
+  // Document Vault Upload Handler
+  const handleVaultUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentCase) return;
+
+    setIsUploading(true);
+    setVaultError("");
+
+    const res = await uploadCaseDocument(currentCase.clientId, currentCase.id, vaultCategory, file);
+    setIsUploading(false);
+
+    if (res.success) {
+      loadVaultFiles();
+    } else {
+      setVaultError(res.error || "فشل رفع الملف إلى المستودع.");
+    }
+  };
+
+  // Document Vault Download / View Link Generator
+  const handleDownloadFile = async (path: string, fileName: string) => {
+    const url = await getDocumentUrl(path);
+    if (url !== "#") {
+      window.open(url, "_blank");
+    } else {
+      // Mock File Download trigger for local fallback demo
+      const blob = new Blob(["محتوى ملف قانوني تجريبي"], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+    }
+  };
+
+  // Document Vault Delete Handler
+  const handleDeleteFile = async (path: string) => {
+    const confirmed = window.confirm("هل أنت متأكد من حذف هذا المستند؟");
+    if (!confirmed) return;
+
+    const success = await deleteCaseDocument(path);
+    if (success) {
+      loadVaultFiles();
+    } else {
+      alert("فشل حذف الملف.");
+    }
+  };
+
+  // Helper to get human-readable file sizes
+  const formatBytes = (bytes?: number) => {
+    if (!bytes) return "غير معروف";
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 text-right">
       
@@ -145,7 +243,7 @@ export default function CaseDetailPage() {
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="border-l border-slate-100 pl-4">
           <span className="text-slate-500 block text-xs font-bold mb-1">الموكل المدعي/المدعى عليه:</span>
-          <span className="text-slate-950 font-extrabold text-base block">{client?.name || "غير معروف"}</span>
+          <span className="text-slate-955 font-extrabold text-base block">{client?.name || "غير معروف"}</span>
           <span className="text-slate-500 text-xs mt-1 block">الرقم الوطني: {client?.nationalId || "غير متوفر"}</span>
         </div>
         <div className="border-l border-slate-100 pl-4">
@@ -185,7 +283,7 @@ export default function CaseDetailPage() {
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left Column Chronological hearings timeline (2/3 width on large screens) */}
+        {/* Left Column Chronological hearings timeline (2/3 width) */}
         <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col">
           <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2 mb-6 pb-3 border-b border-slate-100">
             <Calendar className="w-5 h-5 text-slate-600" />
@@ -249,7 +347,7 @@ export default function CaseDetailPage() {
           )}
         </div>
 
-        {/* Right Column Financial summary widget (1/3 width) */}
+        {/* Right Column Financial summary & Document Vault widgets (1/3 width) */}
         <div className="space-y-6">
           
           {/* Financial summary widget */}
@@ -261,7 +359,7 @@ export default function CaseDetailPage() {
               </h3>
               <button 
                 onClick={() => setShowExpenseModal(true)}
-                className="text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 px-3 py-1.5 rounded-lg transition-all"
+                className="text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 px-3 py-1.5 rounded-lg transition-all shadow-sm"
               >
                 تسجيل مصروف
               </button>
@@ -280,7 +378,7 @@ export default function CaseDetailPage() {
               {caseFinancials.length === 0 ? (
                 <p className="text-xs text-slate-500 italic p-3 text-center bg-slate-50 rounded-xl">لا توجد مصاريف مالية مقيدة.</p>
               ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pl-1">
+                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pl-1">
                   {caseFinancials.map(f => (
                     <div key={f.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                       <div>
@@ -292,6 +390,97 @@ export default function CaseDetailPage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* DOCUMENT VAULT WIDGET */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+            <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2 pb-2 border-b border-slate-100">
+              <FileText className="w-5 h-5 text-indigo-600" />
+              <span>مستودع وثائق القضية (Document Vault)</span>
+            </h3>
+
+            {/* Document category selector tab-bar */}
+            <div className="flex flex-wrap gap-1.5 border-b border-slate-100 pb-2">
+              {[
+                { id: "pleadings", label: "لوائح" },
+                { id: "evidence", label: "بينات" },
+                { id: "minutes", label: "محاضر" },
+                { id: "judgments", label: "أحكام" },
+                { id: "wakala", label: "وكالات" }
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setVaultCategory(cat.id as DocumentCategory)}
+                  className={`px-2.5 py-1 text-[10px] font-black rounded-lg border transition-all ${
+                    vaultCategory === cat.id 
+                      ? "bg-slate-900 text-white border-slate-900" 
+                      : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {vaultError && (
+              <p className="text-[10px] font-bold text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-100">{vaultError}</p>
+            )}
+
+            {/* Document Listing */}
+            <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+              {vaultFiles.length === 0 ? (
+                <p className="text-[11px] text-slate-500 italic p-3 text-center bg-slate-50 rounded-xl">لا توجد مستندات مرفوعة في هذا التصنيف.</p>
+              ) : (
+                vaultFiles.map(file => (
+                  <div key={file.path} className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
+                    <div className="min-w-0 flex-1 pl-2">
+                      <span className="font-bold text-slate-800 block truncate" title={file.name}>{file.name}</span>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">{formatBytes(file.size)}</span>
+                    </div>
+                    <div className="flex gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleDownloadFile(file.path, file.name)}
+                        className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+                        title="تحميل / عرض"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFile(file.path)}
+                        className="p-1.5 bg-rose-50 border border-rose-100 rounded-lg text-rose-600 hover:bg-rose-600 hover:text-white transition-colors"
+                        title="حذف"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Upload form trigger box */}
+            <div className="pt-2 border-t border-slate-100">
+              <label className="w-full flex justify-center items-center gap-2 py-2 px-4 border border-slate-300 border-dashed rounded-xl bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors text-xs font-bold text-slate-700">
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                    <span>جاري رفع الملف...</span>
+                  </>
+                ) : (
+                  <>
+                    <FileUp className="w-4 h-4 text-slate-500" />
+                    <span>رفع مستند إلى تصنيف {vaultCategory === "wakala" ? "الوكالات" : vaultCategory === "pleadings" ? "اللوائح" : vaultCategory === "evidence" ? "البينات" : vaultCategory === "minutes" ? "المحاضر" : "الأحكام"}</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png"
+                  onChange={handleVaultUpload}
+                  disabled={isUploading}
+                  className="hidden"
+                />
+              </label>
             </div>
           </div>
 
@@ -487,7 +676,7 @@ export default function CaseDetailPage() {
                   type="date" 
                   value={expenseDate} 
                   onChange={e => setExpenseDate(e.target.value)} 
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-900" 
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-950" 
                   required 
                 />
               </div>
