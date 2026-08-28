@@ -197,25 +197,49 @@ export default function ClientProfilePage() {
   const handleSaveProperty = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPropName && newPropLocation) {
-      let calculatedStatus = newPropStatus;
-      if (nextRentDate && new Date(nextRentDate) < new Date() && calculatedStatus === "نشط") {
-        calculatedStatus = "متأخر";
+      let dur = Number(newPropDuration);
+      if (!dur && startDate && endDate) {
+          const s = new Date(startDate);
+          const e = new Date(endDate);
+          dur = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
       }
+      if (dur <= 0 && startDate) dur = 1;
 
       let generatedCycles = editingId ? properties.find(p=>p.id === editingId)?.rentCycles || [] : [];
-      if (!editingId && startDate && newPropDuration && newPropRentAmount) {
+      if ((!editingId || generatedCycles.length === 0) && startDate && newPropRentAmount) {
+        generatedCycles = [];
         let sDate = new Date(startDate);
-        for (let i = 0; i < Number(newPropDuration); i++) {
+        for (let i = 0; i < dur; i++) {
           const d = new Date(sDate);
           d.setMonth(d.getMonth() + i);
           generatedCycles.push({
-            id: Date.now().toString() + "-" + i,
+            id: Date.now().toString() + "-" + i + "-" + Math.random().toString(36).substr(2, 5),
             dueDate: d.toISOString().split("T")[0],
             amount: Number(newPropRentAmount),
             receivedFromTenant: false,
             paidToLandlord: false
           });
         }
+      }
+
+      let derivedEndDate = endDate;
+      if (!derivedEndDate && startDate && dur > 0) {
+         const eDate = new Date(startDate);
+         eDate.setMonth(eDate.getMonth() + dur);
+         derivedEndDate = eDate.toISOString().split("T")[0];
+      }
+
+      let derivedNextRentDate = nextRentDate;
+      const firstUnpaid = generatedCycles.find(c => !c.receivedFromTenant);
+      if (firstUnpaid) {
+         derivedNextRentDate = firstUnpaid.dueDate;
+      }
+
+      let calculatedStatus = newPropStatus;
+      if (derivedNextRentDate && new Date(derivedNextRentDate) < new Date() && calculatedStatus === "نشط") {
+        calculatedStatus = "متأخر";
+      } else if (derivedNextRentDate && new Date(derivedNextRentDate) >= new Date() && calculatedStatus === "متأخر") {
+        calculatedStatus = "نشط";
       }
 
       const propertyData: PropertyData = {
@@ -227,16 +251,16 @@ export default function ClientProfilePage() {
         tenant: newPropTenant || "غير محدد",
         status: calculatedStatus,
         paymentFreq: newPropFreq,
-        revenue: (Number(newPropRentAmount) * Number(newPropDuration)) || Number(newPropRev) || 0,
+        revenue: (Number(newPropRentAmount) * dur) || Number(newPropRev) || 0,
         rentAmount: Number(newPropRentAmount),
-        durationMonths: Number(newPropDuration),
+        durationMonths: dur,
         rentCycles: generatedCycles,
         documents: uploadedFiles,
         expenses: editingId ? properties.find(p=>p.id === editingId)?.expenses || [] : [],
         issues: editingId ? properties.find(p=>p.id === editingId)?.issues || [] : [],
         startDate,
-        endDate,
-        nextRentDate,
+        endDate: derivedEndDate,
+        nextRentDate: derivedNextRentDate,
         payoutStatus: editingId ? properties.find(p=>p.id === editingId)?.payoutStatus || "قيد التحصيل" : "قيد التحصيل",
         payoutMethod: editingId ? properties.find(p=>p.id === editingId)?.payoutMethod : "",
         payoutTransactionId: editingId ? properties.find(p=>p.id === editingId)?.payoutTransactionId : "",
