@@ -49,6 +49,58 @@ export default function ClientProfilePage() {
   const [txId, setTxId] = useState("");
   const [payoutDocName, setPayoutDocName] = useState("");
 
+  const [extendingPropId, setExtendingPropId] = useState<number | null>(null);
+  const [extendMonths, setExtendMonths] = useState<number>(1);
+
+  const handleExtendContract = (propId: number) => {
+    const prop = properties.find(p => p.id === propId);
+    if (!prop || !prop.rentAmount || !extendMonths) return;
+
+    let cycles = prop.rentCycles ? [...prop.rentCycles] : [];
+    let lastDate = new Date();
+    if (cycles.length > 0) {
+      lastDate = new Date(cycles[cycles.length - 1].dueDate);
+    } else if (prop.endDate) {
+      lastDate = new Date(prop.endDate);
+    }
+
+    for (let i = 1; i <= extendMonths; i++) {
+      const d = new Date(lastDate);
+      d.setMonth(d.getMonth() + i);
+      cycles.push({
+        id: Date.now().toString() + "-" + Math.random().toString(36).substr(2, 9),
+        dueDate: d.toISOString().split("T")[0],
+        amount: Number(prop.rentAmount),
+        receivedFromTenant: false,
+        paidToLandlord: false
+      });
+    }
+
+    let newEndDate = prop.endDate;
+    if (newEndDate) {
+      const eDate = new Date(newEndDate);
+      eDate.setMonth(eDate.getMonth() + extendMonths);
+      newEndDate = eDate.toISOString().split("T")[0];
+    }
+
+    const updatedProps = properties.map(p => {
+      if (p.id === propId) {
+        return {
+          ...p,
+          rentCycles: cycles,
+          durationMonths: (p.durationMonths || 0) + extendMonths,
+          revenue: (p.revenue || 0) + (extendMonths * p.rentAmount!),
+          endDate: newEndDate || p.endDate
+        };
+      }
+      return p;
+    });
+
+    setProperties(updatedProps);
+    setExtendingPropId(null);
+    setExtendMonths(1);
+  };
+
   const [showLedger, setShowLedger] = useState(false);
 
   const totalRevenue = clientProperties.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
@@ -557,9 +609,52 @@ export default function ClientProfilePage() {
                </div>
             </div>
 
-              {showRentCyclesFor === prop.id && (
+              {showRentCyclesFor === prop.id && (() => {
+                const totalExpected = prop.revenue || 0;
+                const totalCollected = (prop.rentCycles || []).reduce((acc: number, curr: any) => curr.receivedFromTenant ? acc + curr.amount : acc, 0);
+                const remaining = Math.max(0, totalExpected - totalCollected);
+                const percent = totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0;
+                
+                return (
                 <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
-                  <h4 className="text-sm font-extrabold text-indigo-800 mb-4 flex items-center gap-2"><CalendarIcon className="w-4 h-4 text-indigo-600" /> جدول دفعات الإيجار</h4>
+                  <div className="flex flex-wrap items-center justify-between mb-4 gap-4">
+                    <h4 className="text-sm font-extrabold text-indigo-800 flex items-center gap-2"><CalendarIcon className="w-5 h-5 text-indigo-600" /> جدول دفعات الإيجار والتمديد</h4>
+                    <button onClick={() => setExtendingPropId(extendingPropId === prop.id ? null : prop.id)} className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-200 hover:bg-indigo-100 transition-colors shadow-sm">
+                      + تمديد العقد
+                    </button>
+                  </div>
+
+                  {/* Summary Bar */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
+                    <div className="flex justify-between items-end mb-2">
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 mb-1">إجمالي قيمة العقد (المتوقع)</p>
+                        <p className="text-lg font-black text-slate-900">${totalExpected.toLocaleString()}</p>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-bold text-slate-500 mb-1">المتبقي للتحصيل</p>
+                        <p className="text-lg font-black text-rose-600">${remaining.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                      <div className="bg-emerald-500 h-2.5 rounded-full" style={{ width: `${percent}%` }}></div>
+                    </div>
+                    <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
+                      <span>تم التحصيل: ${totalCollected.toLocaleString()} ({percent}%)</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+
+                  {extendingPropId === prop.id && (
+                    <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200 mb-4 animate-in fade-in">
+                      <p className="text-xs font-bold text-indigo-800 mb-2">أدخل مدة التمديد (بالأشهر):</p>
+                      <div className="flex gap-2">
+                        <input type="number" min="1" value={extendMonths} onChange={(e) => setExtendMonths(Number(e.target.value))} className="px-3 py-2 border border-indigo-200 rounded-lg text-sm w-24 outline-none focus:ring-2 focus:ring-indigo-600 font-bold bg-white" />
+                        <button onClick={() => handleExtendContract(prop.id)} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-700 transition-colors">تأكيد التمديد</button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-right border-collapse">
                       <thead>
@@ -607,7 +702,8 @@ export default function ClientProfilePage() {
                     </table>
                   </div>
                 </div>
-              )}
+                );
+              })()}
 
               {showIssuesFor === prop.id && (
                 <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
