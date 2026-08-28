@@ -1,7 +1,7 @@
 "use client";
 import html2canvas from "html2canvas";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowRight, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, TrendingDown, AlertTriangle, Trash2, Download, Receipt, Send, CheckCircle2, FileBarChart, Copy } from "lucide-react";
@@ -53,6 +53,17 @@ export default function ClientProfilePage() {
   const [extendMonths, setExtendMonths] = useState<number>(1);
   const [confirmAction, setConfirmAction] = useState<{type: string, payload?: any} | null>(null);
 
+  useEffect(() => {
+    if (startDate && endDate) {
+      const s = new Date(startDate);
+      const e = new Date(endDate);
+      const m = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+      if (m > 0 && !newPropDuration) {
+        setNewPropDuration(m.toString());
+      }
+    }
+  }, [startDate, endDate]);
+
   const handleExtendContract = (propId: number) => {
     const prop = properties.find(p => p.id === propId);
     if (!prop || !extendMonths) return;
@@ -75,19 +86,31 @@ export default function ClientProfilePage() {
 
     const cyclesToAdd = Math.ceil(extendMonths / monthStep);
 
+    const lastDateStr = cycles.length > 0 ? cycles[cycles.length - 1].dueDate : (prop.endDate || new Date().toISOString().split("T")[0]);
+    const [lYear, lMonth, lDay] = lastDateStr.split('-').map(Number);
+
     for (let i = 1; i <= cyclesToAdd; i++) {
-      const d = new Date(lastDate);
-      if (freq.includes("نهاية الشهر")) {
-         d.setMonth(d.getMonth() + (i * monthStep) + 1);
-         d.setDate(0);
+      let targetMonth = lMonth - 1 + (i * monthStep);
+      let targetDay = lDay;
+      
+      if (freq.includes("بداية الشهر")) {
+         targetDay = 1;
+      } else if (freq.includes("نهاية الشهر")) {
+         targetMonth += 1;
+         targetDay = 0;
       } else {
-         d.setMonth(d.getMonth() + (i * monthStep));
-         if (freq.includes("بداية الشهر")) d.setDate(1);
+         const lastDay = new Date(lYear, targetMonth + 1, 0).getDate();
+         targetDay = Math.min(lDay, lastDay);
       }
+      
+      const d = new Date(lYear, targetMonth, targetDay);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dy = String(d.getDate()).padStart(2, '0');
 
       cycles.push({
         id: Date.now().toString() + "-" + Math.random().toString(36).substr(2, 9),
-        dueDate: d.toISOString().split("T")[0],
+        dueDate: `${y}-${m}-${dy}`,
         amount: monthlyRent * monthStep,
         receivedFromTenant: false,
         paidToLandlord: false
@@ -238,22 +261,30 @@ export default function ClientProfilePage() {
            cycleCount = Math.ceil(dur / 12);
         }
 
+        const [sYear, sMonth, sDay] = startDate.split('-').map(Number);
+
         for (let i = 0; i < cycleCount; i++) {
-          const d = new Date(sDate);
+          let targetMonth = sMonth - 1 + (i * monthStep);
+          let targetDay = sDay;
           
-          if (newPropFreq.includes("نهاية الشهر")) {
-             d.setMonth(d.getMonth() + (i * monthStep) + 1);
-             d.setDate(0);
+          if (newPropFreq.includes("بداية الشهر")) {
+             targetDay = 1;
+          } else if (newPropFreq.includes("نهاية الشهر")) {
+             targetMonth += 1;
+             targetDay = 0;
           } else {
-             d.setMonth(d.getMonth() + (i * monthStep));
-             if (newPropFreq.includes("بداية الشهر")) {
-                 d.setDate(1);
-             }
+             const lastDay = new Date(sYear, targetMonth + 1, 0).getDate();
+             targetDay = Math.min(sDay, lastDay);
           }
+          
+          const d = new Date(sYear, targetMonth, targetDay);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const dy = String(d.getDate()).padStart(2, '0');
 
           generatedCycles.push({
             id: Date.now().toString() + "-" + i + "-" + Math.random().toString(36).substr(2, 5),
-            dueDate: d.toISOString().split("T")[0],
+            dueDate: `${y}-${m}-${dy}`,
             amount: Number(newPropRentAmount) * monthStep,
             receivedFromTenant: false,
             paidToLandlord: false
