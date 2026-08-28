@@ -218,7 +218,61 @@ export default function ClientProfilePage() {
   });
 
   const exportPDF = () => {
-    window.print();
+    const report = document.getElementById("ledger-report");
+    if (!report) return;
+    
+    // Create a clone to inject at the root level to avoid parent container constraints
+    const clone = report.cloneNode(true) as HTMLElement;
+    clone.id = "print-clone";
+    clone.className = "print-active-clone bg-white w-full text-slate-900";
+    
+    const style = document.createElement('style');
+    style.id = "print-style";
+    style.innerHTML = `
+      @media print {
+        body > *:not(.print-active-clone, #print-style) { display: none !important; }
+        body, html {
+           height: auto !important;
+           overflow: visible !important;
+           background: white !important;
+           -webkit-print-color-adjust: exact !important;
+           print-color-adjust: exact !important;
+           margin: 0 !important;
+           padding: 0 !important;
+        }
+        .print-active-clone {
+           display: block !important;
+           position: static !important;
+           width: 100% !important;
+           height: auto !important;
+           overflow: visible !important;
+           margin: 0 !important;
+           padding: 10mm !important; /* give it nice margins */
+        }
+        /* Ensure elements stack nicely and don't overlap */
+        * {
+           float: none !important;
+        }
+        /* Protect property blocks from cutting in half */
+        div[style*="page-break-inside: avoid"], div[style*="pageBreakInside: avoid"] {
+           page-break-inside: avoid !important;
+           break-inside: avoid !important;
+        }
+      }
+      /* Hide the clone when not printing just in case */
+      @media screen {
+        .print-active-clone { display: none !important; }
+      }
+    `;
+    
+    document.body.appendChild(style);
+    document.body.appendChild(clone);
+    
+    setTimeout(() => {
+      window.print();
+      document.body.removeChild(clone);
+      document.body.removeChild(style);
+    }, 100);
   };
   
   const activeCount = clientProperties.filter(p => p.status === 'Active' || p.status === 'نشط').length;
