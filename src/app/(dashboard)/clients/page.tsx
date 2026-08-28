@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Users, Plus, Building, ChevronLeft, Search, Phone, Edit2, Trash2 } from "lucide-react";
+import { Users, Plus, Building, ChevronLeft, Search, Phone, Edit2, Trash2, AlertTriangle } from "lucide-react";
 import { useGlobal } from "../GlobalProvider";
 import { useRouter } from "next/navigation";
 
@@ -15,6 +15,8 @@ export default function ClientsPage() {
   
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [newStatus, setNewStatus] = useState("نشط");
+  const [confirmAction, setConfirmAction] = useState<{type: string, payload?: any} | null>(null);
 
   const openAdd = () => {
     setEditingId(null);
@@ -31,10 +33,11 @@ export default function ClientsPage() {
   };
 
   const handleDeleteClient = () => {
-    if (editingId && window.confirm("هل أنت متأكد من حذف هذا الموكل؟ سيتم حذف جميع العقارات الخاصة به.")) {
+    if (editingId) {
       setClients(clients.filter(c => c.id !== editingId));
       setProperties(properties.filter(p => p.clientId !== editingId));
       setIsAdding(false);
+      setConfirmAction(null);
     }
   };
 
@@ -95,7 +98,7 @@ export default function ClientsPage() {
                 إلغاء
               </button>
               {editingId && (
-                <button type="button" onClick={handleDeleteClient} className="mr-auto bg-rose-50 text-rose-700 border border-rose-200 px-4 py-2.5 rounded-xl hover:bg-rose-100 font-bold text-sm transition-colors shadow-sm flex items-center gap-2">
+                <button type="button" onClick={() => setConfirmAction({type: 'deleteClient'})} className="mr-auto bg-rose-50 text-rose-700 border border-rose-200 px-4 py-2.5 rounded-xl hover:bg-rose-100 font-bold text-sm transition-colors shadow-sm flex items-center gap-2">
                   <Trash2 className="w-4 h-4" /> حذف
                 </button>
               )}
@@ -159,6 +162,46 @@ export default function ClientsPage() {
           </table>
         </div>
       </div>
+      
+      {confirmAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-6 max-w-md w-full animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-xl font-extrabold text-slate-900">
+                  {confirmAction.type === 'deleteClient' && 'تأكيد حذف الموكل'}
+                </h3>
+                <p className="text-sm font-bold text-slate-500 mt-1">
+                  {confirmAction.type === 'deleteClient' && 'هل أنت متأكد من حذف هذا الموكل؟ سيتم حذف جميع العقارات الخاصة به نهائياً.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button 
+                onClick={() => {
+                  if (confirmAction.type === 'deleteClient') {
+                    handleDeleteClient();
+                  }
+                  setConfirmAction(null);
+                }}
+                className="flex-1 bg-rose-600 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-rose-700 transition-colors"
+              >
+                تأكيد الحذف
+              </button>
+              <button 
+                onClick={() => setConfirmAction(null)} 
+                className="flex-1 bg-slate-100 text-slate-700 px-5 py-3 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

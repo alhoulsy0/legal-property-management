@@ -51,6 +51,7 @@ export default function ClientProfilePage() {
 
   const [extendingPropId, setExtendingPropId] = useState<number | null>(null);
   const [extendMonths, setExtendMonths] = useState<number>(1);
+  const [confirmAction, setConfirmAction] = useState<{type: string, payload?: any} | null>(null);
 
   const handleExtendContract = (propId: number) => {
     const prop = properties.find(p => p.id === propId);
@@ -172,9 +173,10 @@ export default function ClientProfilePage() {
   };
 
   const handleDeleteProperty = () => {
-    if (editingId && window.confirm("هل أنت متأكد من حذف هذا العقار؟")) {
+    if (editingId) {
       setProperties(properties.filter(p => p.id !== editingId));
       setIsAdding(false);
+      setConfirmAction(null);
     }
   };
 
@@ -516,7 +518,7 @@ export default function ClientProfilePage() {
                 إلغاء
               </button>
               {editingId && (
-                <button type="button" onClick={handleDeleteProperty} className="mr-auto bg-rose-50 text-rose-700 border border-rose-200 px-5 py-3 rounded-xl hover:bg-rose-100 font-bold text-sm transition-colors shadow-sm flex items-center gap-2">
+                <button type="button" onClick={() => setConfirmAction({type: 'deleteProperty'})} className="mr-auto bg-rose-50 text-rose-700 border border-rose-200 px-5 py-3 rounded-xl hover:bg-rose-100 font-bold text-sm transition-colors shadow-sm flex items-center gap-2">
                   <Trash2 className="w-5 h-5" /> حذف
                 </button>
               )}
@@ -525,85 +527,85 @@ export default function ClientProfilePage() {
         </div>
       )}
 
-      <div className="mt-6 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-x-auto custom-scrollbar">
-        <div className="flex flex-col min-w-[1100px] px-6">
+      <div className="mt-6 bg-transparent lg:bg-white lg:rounded-3xl lg:shadow-sm lg:border lg:border-slate-200">
+        <div className="flex flex-col gap-4 lg:gap-0 lg:px-6">
         {clientProperties.map((prop) => {
           const rentDaysLeft = calculateDays(prop.nextRentDate || "");
           const contractDaysLeft = calculateDays(prop.endDate || "");
           const isRentLate = rentDaysLeft !== null && rentDaysLeft < 0;
 
           return (
-          <div key={prop.id} className="border-b border-slate-200 last:border-0 flex flex-col justify-between group transition-colors hover:bg-slate-50/50">
-            <div className="grid grid-cols-12 gap-4 items-center py-4 min-w-[900px]">
+          <div key={prop.id} className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 lg:p-0 lg:bg-transparent lg:rounded-none lg:shadow-none lg:border-0 lg:border-b lg:border-slate-200 lg:last:border-0 flex flex-col justify-between group transition-colors hover:bg-slate-50/50">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 py-2 lg:py-4">
                {/* Info Col */}
-               <div className="col-span-3 flex items-center gap-3">
-                 <div className="p-3 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
-                   <Building className="w-6 h-6 text-slate-800" />
+               <div className="flex items-center gap-4 w-full lg:w-1/4">
+                 <div className="p-3.5 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-100 shrink-0">
+                   <Building className="w-6 h-6" />
                  </div>
                  <div className="min-w-0">
                    <h3 className="text-base font-extrabold text-slate-900 truncate">{prop.name}</h3>
-                   <p className="text-sm font-bold text-slate-500 truncate">{prop.type} • {prop.location}</p>
+                   <p className="text-sm font-bold text-slate-500 truncate mt-0.5">{prop.type} • {prop.location}</p>
                  </div>
                </div>
 
-               {/* Tenant */}
-               <div className="col-span-2">
-                 <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">المستأجر</p>
-                 <p className="text-base font-bold text-slate-800 truncate">{prop.tenant}</p>
-               </div>
-
-               {/* Rent */}
-               <div className="col-span-2">
-                 <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الإيجار الشهري</p>
-                 <p className="text-base font-black text-indigo-700">${prop.rentAmount?.toLocaleString() || prop.revenue?.toLocaleString()}</p>
-               </div>
-
-               {/* Dates / Status */}
-               <div className="col-span-2">
-                  <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الاستحقاق القادم</p>
-                  <p className={`text-base font-bold ${isRentLate ? 'text-rose-600' : 'text-slate-800'}`}>
-                    {prop.nextRentDate || "غير محدد"}
-                    {isRentLate && <span className="ml-2 text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md">متأخر</span>}
-                  </p>
-               </div>
-
-               <div className="col-span-1 flex items-center">
-                  <span className={`px-2.5 py-1 text-xs font-extrabold rounded-lg shadow-sm border whitespace-nowrap ${
-                    prop.status === 'نشط' || prop.status === 'Active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                    prop.status === 'متأخر' || prop.status === 'Delayed' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                    prop.status === 'محجوز' ? 'bg-slate-800 text-white border-slate-900' :
-                    'bg-rose-50 text-rose-800 border-rose-200'
-                  }`}>
-                    {prop.status}
-                  </span>
+               {/* Stats Grid */}
+               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full lg:flex-1 bg-slate-50 lg:bg-transparent p-4 lg:p-0 rounded-2xl lg:rounded-none border border-slate-100 lg:border-0">
+                 <div>
+                   <p className="text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">المستأجر</p>
+                   <p className="text-sm font-bold text-slate-800 truncate">{prop.tenant}</p>
+                 </div>
+                 <div>
+                   <p className="text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">الإيجار الشهري</p>
+                   <p className="text-sm font-black text-indigo-700">${prop.rentAmount?.toLocaleString() || prop.revenue?.toLocaleString()}</p>
+                 </div>
+                 <div>
+                    <p className="text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">الاستحقاق القادم</p>
+                    <p className={`text-sm font-bold ${isRentLate ? 'text-rose-600' : 'text-slate-800'}`}>
+                      {prop.nextRentDate || "غير محدد"}
+                      {isRentLate && <span className="ml-2 text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md">متأخر</span>}
+                    </p>
+                 </div>
+                 <div className="flex items-center">
+                    <div className="w-full">
+                      <p className="text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider block lg:hidden">الحالة</p>
+                      <span className={`px-3 py-1.5 text-xs font-extrabold rounded-lg shadow-sm border whitespace-nowrap ${
+                        prop.status === 'نشط' || prop.status === 'Active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                        prop.status === 'متأخر' || prop.status === 'Delayed' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                        prop.status === 'محجوز' ? 'bg-slate-800 text-white border-slate-900' :
+                        'bg-rose-50 text-rose-800 border-rose-200'
+                      }`}>
+                        {prop.status}
+                      </span>
+                    </div>
+                 </div>
                </div>
 
                {/* Actions Array */}
-               <div className="col-span-2 flex items-center justify-end gap-2 overflow-x-auto custom-scrollbar pb-2 xl:pb-0">
+               <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar w-full lg:w-auto pt-2 lg:pt-0 justify-start lg:justify-end">
                   {prop.documents && prop.documents.length > 0 && (
-                    <button onClick={() => handleDownload(prop.documents![0].name)} className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100" title="تحميل المستندات">
+                    <button onClick={() => handleDownload(prop.documents![0].name)} className="p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100" title="تحميل المستندات">
                       <FileText className="w-5 h-5" />
                     </button>
                   )}
-                  <button onClick={() => {setShowRentCyclesFor(showRentCyclesFor === prop.id ? null : prop.id); setShowIssuesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showRentCyclesFor === prop.id ? 'bg-indigo-600 text-white border-indigo-700' : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-indigo-100'}`} title="جدول الدفعات">
+                  <button onClick={() => {setShowRentCyclesFor(showRentCyclesFor === prop.id ? null : prop.id); setShowIssuesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2.5 rounded-xl transition-colors border ${showRentCyclesFor === prop.id ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-indigo-100'}`} title="جدول الدفعات">
                     <CalendarIcon className="w-5 h-5" />
                   </button>
-                  <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showIssuesFor === prop.id ? 'bg-amber-600 text-white border-amber-700' : 'text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-100'}`} title="قضايا ومشاكل">
+                  <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2.5 rounded-xl transition-colors border ${showIssuesFor === prop.id ? 'bg-amber-600 text-white border-amber-700 shadow-md' : 'text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-100'}`} title="قضايا ومشاكل">
                     <AlertTriangle className="w-5 h-5" />
                   </button>
-                  <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowIssuesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200'}`} title="المصروفات">
+                  <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowIssuesFor(null); setShowPayoutFor(null);}} className={`p-2.5 rounded-xl transition-colors border ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200'}`} title="المصروفات">
                     <Receipt className="w-5 h-5" />
                   </button>
-                  <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowIssuesFor(null);}} className={`p-2 rounded-lg transition-colors border ${showPayoutFor === prop.id ? 'bg-emerald-600 text-white border-emerald-700' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100'}`} title="تحويل للمالك">
+                  <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowIssuesFor(null);}} className={`p-2.5 rounded-xl transition-colors border ${showPayoutFor === prop.id ? 'bg-emerald-600 text-white border-emerald-700 shadow-md' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100'}`} title="تحويل للمالك">
                     {prop.payoutStatus === 'Paid to Landlord' ? <CheckCircle2 className="w-5 h-5" /> : <Send className="w-5 h-5" />}
                   </button>
 
-                  <div className="w-px h-6 bg-slate-200 mx-1"></div>
+                  <div className="hidden lg:block w-px h-8 bg-slate-200 mx-2"></div>
 
-                  <button onClick={() => handleDuplicateProperty(prop)} className="p-2 text-slate-400 hover:text-blue-600 bg-white hover:bg-blue-50 rounded-lg transition-colors border border-slate-200 shadow-sm" title="نسخ العقار">
+                  <button onClick={() => setConfirmAction({ type: 'duplicateProperty', payload: prop })} className="p-2.5 text-slate-400 hover:text-blue-600 bg-white hover:bg-blue-50 rounded-xl transition-colors border border-slate-200 shadow-sm" title="نسخ العقار">
                     <Copy className="w-5 h-5" />
                   </button>
-                  <button onClick={() => openEdit(prop)} className="p-2 text-slate-400 hover:text-slate-900 bg-white hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 shadow-sm" title="تعديل">
+                  <button onClick={() => openEdit(prop)} className="p-2.5 text-slate-400 hover:text-slate-900 bg-white hover:bg-slate-100 rounded-xl transition-colors border border-slate-200 shadow-sm" title="تعديل">
                     <Edit2 className="w-5 h-5" />
                   </button>
                </div>
@@ -803,6 +805,50 @@ export default function ClientProfilePage() {
         )}
       </div>
       </div>
+
+      {confirmAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-6 max-w-md w-full animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-xl font-extrabold text-slate-900">
+                  {confirmAction.type === 'deleteProperty' && 'تأكيد الحذف'}
+                  {confirmAction.type === 'duplicateProperty' && 'تأكيد النسخ'}
+                </h3>
+                <p className="text-sm font-bold text-slate-500 mt-1">
+                  {confirmAction.type === 'deleteProperty' && 'هل أنت متأكد من رغبتك في حذف هذا العقار؟ لا يمكن التراجع عن هذا الإجراء.'}
+                  {confirmAction.type === 'duplicateProperty' && 'هل تريد إنشاء نسخة جديدة من هذا العقار؟'}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button 
+                onClick={() => {
+                  if (confirmAction.type === 'deleteProperty') {
+                    handleDeleteProperty();
+                  } else if (confirmAction.type === 'duplicateProperty') {
+                    handleDuplicateProperty(confirmAction.payload);
+                  }
+                  setConfirmAction(null);
+                }}
+                className="flex-1 bg-slate-900 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors"
+              >
+                تأكيد
+              </button>
+              <button 
+                onClick={() => setConfirmAction(null)} 
+                className="flex-1 bg-slate-100 text-slate-700 px-5 py-3 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
