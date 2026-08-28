@@ -68,8 +68,6 @@ export default function ClientProfilePage() {
     const prop = properties.find(p => p.id === propId);
     if (!prop || !extendMonths) return;
 
-    const monthlyRent = Number(prop.rentAmount) || (prop.revenue && prop.durationMonths ? Math.round(prop.revenue / prop.durationMonths) : 0);
-
     let cycles = prop.rentCycles ? [...prop.rentCycles] : [];
     let lastDate = new Date();
     if (cycles.length > 0) {
@@ -85,6 +83,9 @@ export default function ClientProfilePage() {
     else if (freq.includes("سنوي")) monthStep = 12;
 
     const cyclesToAdd = Math.ceil(extendMonths / monthStep);
+    
+    // Cycle amount is either the rentAmount (single payment) or derived from previous cycles
+    const cycleAmount = Number(prop.rentAmount) || (cycles.length > 0 ? cycles[0].amount : (prop.revenue && prop.durationMonths ? Math.round((prop.revenue / prop.durationMonths) * monthStep) : 0));
 
     const lastDateStr = cycles.length > 0 ? cycles[cycles.length - 1].dueDate : (prop.endDate || new Date().toISOString().split("T")[0]);
     const [lYear, lMonth, lDay] = lastDateStr.split('-').map(Number);
@@ -111,7 +112,7 @@ export default function ClientProfilePage() {
       cycles.push({
         id: Date.now().toString() + "-" + Math.random().toString(36).substr(2, 9),
         dueDate: `${y}-${m}-${dy}`,
-        amount: monthlyRent * monthStep,
+        amount: cycleAmount,
         receivedFromTenant: false,
         paidToLandlord: false
       });
@@ -140,7 +141,7 @@ export default function ClientProfilePage() {
           ...p,
           rentCycles: cycles,
           durationMonths: (p.durationMonths || 0) + extendMonths,
-          revenue: (p.revenue || 0) + (extendMonths * monthlyRent),
+          revenue: (p.revenue || 0) + (cyclesToAdd * cycleAmount),
           endDate: newEndDate || p.endDate,
           nextRentDate: updatedNextRentDate,
           status: newStatus
@@ -285,7 +286,7 @@ export default function ClientProfilePage() {
           generatedCycles.push({
             id: Date.now().toString() + "-" + i + "-" + Math.random().toString(36).substr(2, 5),
             dueDate: `${y}-${m}-${dy}`,
-            amount: Number(newPropRentAmount) * monthStep,
+            amount: Number(newPropRentAmount),
             receivedFromTenant: false,
             paidToLandlord: false
           });
@@ -312,6 +313,8 @@ export default function ClientProfilePage() {
         calculatedStatus = "نشط";
       }
 
+      const totalCyclesAmount = generatedCycles.reduce((acc, c) => acc + c.amount, 0);
+
       const propertyData: PropertyData = {
         id: editingId || Date.now(),
         clientId: clientId,
@@ -321,7 +324,7 @@ export default function ClientProfilePage() {
         tenant: newPropTenant || "غير محدد",
         status: calculatedStatus,
         paymentFreq: newPropFreq,
-        revenue: (Number(newPropRentAmount) * dur) || Number(newPropRev) || 0,
+        revenue: totalCyclesAmount > 0 ? totalCyclesAmount : (editingId ? (properties.find(p=>p.id === editingId)?.revenue || 0) : (Number(newPropRev) || 0)),
         rentAmount: Number(newPropRentAmount),
         durationMonths: dur,
         rentCycles: generatedCycles,
@@ -624,7 +627,7 @@ export default function ClientProfilePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">قيمة الإيجار الشهري (د.أ)</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">قيمة الدفعة الواحدة (د.أ)</label>
                 <input type="number" value={newPropRentAmount} onChange={(e) => setNewPropRentAmount(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" placeholder="0" />
               </div>
               <div>
