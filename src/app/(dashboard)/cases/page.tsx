@@ -384,7 +384,7 @@ function CasesPageContent() {
               <div className="p-2 bg-slate-100 rounded-xl">
                 <Scale className="w-5 h-5 text-slate-700" />
               </div>
-              <h3 className="text-sm font-bold text-slate-655">إجمالي القضايا</h3>
+              <h3 className="text-sm font-bold text-slate-700">إجمالي القضايا</h3>
             </div>
             <p className="text-3xl font-extrabold text-slate-900">{totalCases}</p>
           </div>
