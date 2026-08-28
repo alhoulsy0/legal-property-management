@@ -477,7 +477,7 @@ export default function ClientProfilePage() {
         <div className="bg-slate-900 p-6 rounded-3xl shadow-md border border-slate-800 flex items-center gap-5">
           <div className="p-4 bg-slate-800 text-white rounded-2xl shadow-sm"><TrendingUp className="w-6 h-6" /></div>
           <div>
-            <p className="text-sm font-bold text-slate-300">صافي التدفقات</p>
+            <p className="text-sm font-bold text-slate-600">صافي التدفقات</p>
             <p className="text-2xl font-extrabold text-white mt-1">د.أ {netCashFlow.toLocaleString()}</p>
           </div>
         </div>
@@ -694,7 +694,7 @@ export default function ClientProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="col-span-full md:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-bold text-slate-800 mb-2">اسم العقار / الوحدة</label>
-                <input type="text" value={newPropName} onChange={(e) => setNewPropName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" required placeholder="مثال: شقة رقم 5 - عمارة الياسمين" />
+                <input type="text" value={newPropName} onChange={(e) => setNewPropName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-600" required placeholder="مثال: شقة رقم 5 - عمارة الياسمين" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">نوع العقار</label>
@@ -704,12 +704,12 @@ export default function ClientProfilePage() {
               </div>
               <div className="col-span-full lg:col-span-1">
                 <label className="block text-sm font-bold text-slate-800 mb-2">الموقع / العنوان</label>
-                <input type="text" value={newPropLocation} onChange={(e) => setNewPropLocation(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" required placeholder="عمان - شارع الاستقلال" />
+                <input type="text" value={newPropLocation} onChange={(e) => setNewPropLocation(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-600" required placeholder="عمان - شارع الاستقلال" />
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">اسم المستأجر</label>
-                <input type="text" value={newPropTenant} onChange={(e) => setNewPropTenant(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" placeholder="أحمد محمد" />
+                <input type="text" value={newPropTenant} onChange={(e) => setNewPropTenant(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-600" placeholder="أحمد محمد" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">تاريخ بداية العقد</label>
@@ -733,11 +733,11 @@ export default function ClientProfilePage() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">قيمة الدفعة الواحدة (د.أ)</label>
-                <input type="number" value={newPropRentAmount} onChange={(e) => setNewPropRentAmount(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" placeholder="0" />
+                <input type="number" value={newPropRentAmount} onChange={(e) => setNewPropRentAmount(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-600" placeholder="0" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">مدة العقد (بالأشهر)</label>
-                <input type="number" value={newPropDuration} onChange={(e) => setNewPropDuration(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" placeholder="12" />
+                <input type="number" value={newPropDuration} onChange={(e) => setNewPropDuration(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-600" placeholder="12" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">الحالة القانونية</label>
@@ -749,7 +749,7 @@ export default function ClientProfilePage() {
               <div className="col-span-full">
                 <label className="block text-sm font-bold text-slate-800 mb-2">إرفاق مستندات (عقود، هويات، أحكام)</label>
                 <div className="relative w-full border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-blue-50 transition-colors cursor-pointer group">
-                  <input type="file" multiple onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer placeholder-slate-500" />
+                  <input type="file" multiple onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer placeholder-slate-600" />
                   <UploadCloud className="w-10 h-10 text-slate-600 group-hover:text-blue-600 mb-3 transition-colors" />
                   <p className="text-sm font-extrabold text-slate-700">انقر للرفع أو اسحب الملفات هنا</p>
                   <p className="text-xs font-semibold text-slate-700 mt-1">PDF, DOCX حد أقصى 10MB</p>
@@ -935,7 +935,7 @@ export default function ClientProfilePage() {
                       <div className="flex flex-wrap gap-2">
                         <div className="flex-1 min-w-[200px]">
                            <label className="text-xs font-bold text-emerald-700 mb-1 block">القيمة الجديدة للدفعة (د.أ)</label>
-                           <input type="number" min="1" value={increaseRentAmount} onChange={e => setIncreaseRentAmount(e.target.value)} placeholder="مثال: 450" className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-600 placeholder-slate-400" />
+                           <input type="number" min="1" value={increaseRentAmount} onChange={e => setIncreaseRentAmount(e.target.value)} placeholder="مثال: 450" className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-600 placeholder-slate-600" />
                         </div>
                         <div className="flex-1 min-w-[200px]">
                            <label className="text-xs font-bold text-emerald-700 mb-1 block">تطبق على الدفعات ابتداءً من تاريخ</label>
