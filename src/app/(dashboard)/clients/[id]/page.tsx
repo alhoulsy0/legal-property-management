@@ -735,6 +735,8 @@ export default function ClientProfilePage() {
           const rentDaysLeft = calculateDays(prop.nextRentDate || "");
           const contractDaysLeft = calculateDays(prop.endDate || "");
           const isRentLate = rentDaysLeft !== null && rentDaysLeft < 0;
+          const isRentToday = rentDaysLeft === 0;
+          const isRentSoon = rentDaysLeft !== null && rentDaysLeft > 0 && rentDaysLeft <= 5;
 
           const totalExpected = prop.revenue || 0;
           const totalCollected = (prop.rentCycles || []).reduce((acc, curr) => curr.receivedFromTenant ? acc + curr.amount : acc, 0);
@@ -770,6 +772,8 @@ export default function ClientProfilePage() {
                     <p className={`text-sm font-bold ${isRentLate ? 'text-rose-600' : 'text-slate-800'}`}>
                       {prop.nextRentDate || "غير محدد"}
                       {isRentLate && <span className="ml-1.5 text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-md">متأخر</span>}
+                      {isRentToday && <span className="ml-1.5 text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md">اليوم</span>}
+                      {isRentSoon && <span className="ml-1.5 text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md">قريباً</span>}
                     </p>
                  </div>
                  <div>
@@ -909,7 +913,10 @@ export default function ClientProfilePage() {
                             </thead>
                             <tbody>
                               {prop.rentCycles?.map(cycle => {
-                                const isCycleLate = calculateDays(cycle.dueDate) !== null && calculateDays(cycle.dueDate)! < 0 && !cycle.receivedFromTenant;
+                                const dLeft = calculateDays(cycle.dueDate);
+                                const isCycleLate = dLeft !== null && dLeft < 0 && !cycle.receivedFromTenant;
+                                const isCycleToday = dLeft === 0 && !cycle.receivedFromTenant;
+                                const isCycleSoon = dLeft !== null && dLeft > 0 && dLeft <= 5 && !cycle.receivedFromTenant;
                                 return (
                                 <tr key={cycle.id} className={`border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors ${isCycleLate ? 'bg-rose-50/30' : ''}`}>
                                   <td className="py-3 px-4 text-sm font-bold text-slate-900">د.أ {cycle.amount}</td>
@@ -917,6 +924,8 @@ export default function ClientProfilePage() {
                                     <div className="flex items-center gap-2">
                                       {cycle.dueDate}
                                       {isCycleLate && <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-md font-extrabold">متأخر</span>}
+                                      {isCycleToday && <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md font-extrabold">اليوم</span>}
+                                      {isCycleSoon && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md font-extrabold">قريباً</span>}
                                     </div>
                                   </td>
                                   <td className="py-3 px-4 text-sm font-bold">
@@ -929,10 +938,13 @@ export default function ClientProfilePage() {
                                             const nextDate = firstUnpaid ? firstUnpaid.dueDate : p.endDate;
                                             
                                             let newStatus = p.status;
-                                            if (nextDate && new Date(nextDate) < new Date() && newStatus === 'نشط') {
-                                               newStatus = 'متأخر';
-                                            } else if (nextDate && new Date(nextDate) >= new Date() && newStatus === 'متأخر') {
-                                               newStatus = 'نشط';
+                                            const daysToNext = calculateDays(nextDate || '');
+                                            if (daysToNext !== null) {
+                                              if (daysToNext < 0 && newStatus === 'نشط') {
+                                                 newStatus = 'متأخر';
+                                              } else if (daysToNext >= 0 && newStatus === 'متأخر') {
+                                                 newStatus = 'نشط';
+                                              }
                                             }
                                             
                                             return {...p, rentCycles: newCycles, nextRentDate: nextDate, status: newStatus};
