@@ -86,12 +86,24 @@ export default function ClientProfilePage() {
 
     const updatedProps = properties.map(p => {
       if (p.id === propId) {
+        const firstUnpaid = cycles.find(c => !c.receivedFromTenant);
+        const updatedNextRentDate = firstUnpaid ? firstUnpaid.dueDate : (newEndDate || p.endDate);
+        
+        let newStatus = p.status;
+        if (updatedNextRentDate && new Date(updatedNextRentDate) < new Date() && newStatus === 'نشط') {
+           newStatus = 'متأخر';
+        } else if (updatedNextRentDate && new Date(updatedNextRentDate) >= new Date() && newStatus === 'متأخر') {
+           newStatus = 'نشط';
+        }
+
         return {
           ...p,
           rentCycles: cycles,
           durationMonths: (p.durationMonths || 0) + extendMonths,
           revenue: (p.revenue || 0) + (extendMonths * p.rentAmount!),
-          endDate: newEndDate || p.endDate
+          endDate: newEndDate || p.endDate,
+          nextRentDate: updatedNextRentDate,
+          status: newStatus
         };
       }
       return p;
@@ -112,9 +124,9 @@ export default function ClientProfilePage() {
 
   const ledgerData: any[] = [];
   clientProperties.forEach(p => {
-    ledgerData.push({ type: "إيراد", desc: `إيجار متوقع: ${p.name}`, amount: p.revenue, date: p.nextRentDate || "-", status: p.payoutStatus === "Paid to Landlord" ? "تم التحويل" : "قيد التحصيل" });
+    ledgerData.push({ type: "إيراد", desc: `إيجار متوقع: د.أ {p.name}`, amount: p.revenue, date: p.nextRentDate || "-", status: p.payoutStatus === "Paid to Landlord" ? "تم التحويل" : "قيد التحصيل" });
     p.expenses?.forEach(exp => {
-      ledgerData.push({ type: "مصروف", desc: `${p.name}: ${exp.description}`, amount: -exp.amount, date: exp.date, status: "مخصوم" });
+      ledgerData.push({ type: "مصروف", desc: `${p.name}: د.أ {exp.description}`, amount: -exp.amount, date: exp.date, status: "مخصوم" });
     });
   });
 
@@ -319,21 +331,21 @@ export default function ClientProfilePage() {
           <div className="p-4 bg-slate-900 text-white rounded-2xl shadow-md"><DollarSign className="w-6 h-6" /></div>
           <div>
             <p className="text-sm font-bold text-slate-500">الإيراد المتوقع</p>
-            <p className="text-2xl font-extrabold text-slate-900 mt-1">${totalRevenue.toLocaleString()}</p>
+            <p className="text-2xl font-extrabold text-slate-900 mt-1">د.أ {totalRevenue.toLocaleString()}</p>
           </div>
         </div>
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-5">
           <div className="p-4 bg-rose-100 text-rose-700 rounded-2xl shadow-sm"><TrendingDown className="w-6 h-6" /></div>
           <div>
             <p className="text-sm font-bold text-slate-500">إجمالي المصروفات</p>
-            <p className="text-2xl font-extrabold text-rose-600 mt-1">${totalExpenses.toLocaleString()}</p>
+            <p className="text-2xl font-extrabold text-rose-600 mt-1">د.أ {totalExpenses.toLocaleString()}</p>
           </div>
         </div>
         <div className="bg-slate-900 p-6 rounded-3xl shadow-md border border-slate-800 flex items-center gap-5">
           <div className="p-4 bg-slate-800 text-white rounded-2xl shadow-sm"><TrendingUp className="w-6 h-6" /></div>
           <div>
             <p className="text-sm font-bold text-slate-300">صافي التدفقات</p>
-            <p className="text-2xl font-extrabold text-white mt-1">${netCashFlow.toLocaleString()}</p>
+            <p className="text-2xl font-extrabold text-white mt-1">د.أ {netCashFlow.toLocaleString()}</p>
           </div>
         </div>
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-5">
@@ -390,15 +402,15 @@ export default function ClientProfilePage() {
                 <div className="grid grid-cols-3 gap-5 mb-8">
                 <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl text-center">
                   <p className="text-sm font-extrabold text-slate-500 tracking-wider mb-1">إجمالي الإيرادات</p>
-                  <p className="text-2xl font-black text-slate-900">${totalRevenue.toLocaleString()}</p>
+                  <p className="text-2xl font-black text-slate-900">د.أ {totalRevenue.toLocaleString()}</p>
                 </div>
                 <div className="p-5 bg-rose-50 border border-rose-200 rounded-2xl text-center">
                   <p className="text-sm font-extrabold text-rose-600 tracking-wider mb-1">إجمالي الخصومات</p>
-                  <p className="text-2xl font-black text-rose-700">${totalExpenses.toLocaleString()}</p>
+                  <p className="text-2xl font-black text-rose-700">د.أ {totalExpenses.toLocaleString()}</p>
                 </div>
                 <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-2xl text-center">
                   <p className="text-sm font-extrabold text-emerald-700 tracking-wider mb-1">الصافي المستحق للمالك</p>
-                  <p className="text-2xl font-black text-emerald-700">${netCashFlow.toLocaleString()}</p>
+                  <p className="text-2xl font-black text-emerald-700">د.أ {netCashFlow.toLocaleString()}</p>
                 </div>
               </div>
 
@@ -420,10 +432,10 @@ export default function ClientProfilePage() {
                       <tr key={idx} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3 px-4 text-sm font-bold text-slate-700">{item.date}</td>
                         <td className="py-3 px-4 text-sm font-bold">
-                          <span className={`px-2.5 py-1 rounded-md text-[10px] tracking-wider ${item.type === 'إيراد' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>{item.type}</span>
+                          <span className={`px-2.5 py-1 rounded-md text-[10px] tracking-wider د.أ {item.type === 'إيراد' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>{item.type}</span>
                         </td>
                         <td className="py-3 px-4 text-sm font-semibold text-slate-900">{item.desc}</td>
-                        <td className={`py-3 px-4 text-left text-sm font-extrabold ${item.amount < 0 ? 'text-rose-600' : 'text-slate-900'}`}>{item.amount < 0 ? `-$${Math.abs(item.amount)}` : `$${item.amount}`}</td>
+                        <td className={`py-3 px-4 text-left text-sm font-extrabold د.أ {item.amount < 0 ? 'text-rose-600' : 'text-slate-900'}`}>{item.amount < 0 ? `-د.أ د.أ {Math.abs(item.amount)}` : `$${item.amount}`}</td>
                         <td className="py-3 px-4 text-left text-sm font-bold text-slate-500">{item.status}</td>
                       </tr>
                     ))
@@ -474,7 +486,7 @@ export default function ClientProfilePage() {
                 <input type="date" value={nextRentDate} onChange={(e) => setNextRentDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">قيمة الإيجار الشهري ($)</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">قيمة الإيجار الشهري (د.أ)</label>
                 <input type="number" value={newPropRentAmount} onChange={(e) => setNewPropRentAmount(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder-slate-500" placeholder="0" />
               </div>
               <div>
@@ -565,11 +577,11 @@ export default function ClientProfilePage() {
                  </div>
                  <div>
                    <p className="text-[10px] font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الإيجار الشهري</p>
-                   <p className="text-xs font-black text-indigo-700">${prop.rentAmount?.toLocaleString() || prop.revenue?.toLocaleString()}</p>
+                   <p className="text-xs font-black text-indigo-700">د.أ {prop.rentAmount?.toLocaleString() || prop.revenue?.toLocaleString()}</p>
                  </div>
                  <div>
                     <p className="text-[10px] font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الاستحقاق القادم</p>
-                    <p className={`text-xs font-bold ${isRentLate ? 'text-rose-600' : 'text-slate-800'}`}>
+                    <p className={`text-xs font-bold د.أ {isRentLate ? 'text-rose-600' : 'text-slate-800'}`}>
                       {prop.nextRentDate || "غير محدد"}
                       {isRentLate && <span className="ml-1.5 text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-md">متأخر</span>}
                     </p>
@@ -577,7 +589,7 @@ export default function ClientProfilePage() {
                  <div className="flex items-center">
                     <div className="w-full">
                       <p className="text-[10px] font-bold text-slate-400 mb-0.5 uppercase tracking-wider block lg:hidden">الحالة</p>
-                      <span className={`px-2 py-1 text-[11px] font-extrabold rounded-lg shadow-sm border whitespace-nowrap ${
+                      <span className={`px-2 py-1 text-[11px] font-extrabold rounded-lg shadow-sm border whitespace-nowrap د.أ {
                         prop.status === 'نشط' || prop.status === 'Active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                         prop.status === 'متأخر' || prop.status === 'Delayed' ? 'bg-amber-50 text-amber-800 border-amber-200' :
                         prop.status === 'محجوز' ? 'bg-slate-800 text-white border-slate-900' :
@@ -596,16 +608,16 @@ export default function ClientProfilePage() {
                       <FileText className="w-4 h-4" />
                     </button>
                   )}
-                  <button onClick={() => {setShowRentCyclesFor(showRentCyclesFor === prop.id ? null : prop.id); setShowIssuesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showRentCyclesFor === prop.id ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-indigo-100'}`} title="جدول الدفعات">
+                  <button onClick={() => {setShowRentCyclesFor(showRentCyclesFor === prop.id ? null : prop.id); setShowIssuesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border د.أ {showRentCyclesFor === prop.id ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-indigo-100'}`} title="جدول الدفعات">
                     <CalendarIcon className="w-4 h-4" />
                   </button>
-                  <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showIssuesFor === prop.id ? 'bg-amber-600 text-white border-amber-700 shadow-md' : 'text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-100'}`} title="قضايا ومشاكل">
+                  <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border د.أ {showIssuesFor === prop.id ? 'bg-amber-600 text-white border-amber-700 shadow-md' : 'text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-100'}`} title="قضايا ومشاكل">
                     <AlertTriangle className="w-4 h-4" />
                   </button>
-                  <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowIssuesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200'}`} title="المصروفات">
+                  <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowIssuesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border د.أ {showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200'}`} title="المصروفات">
                     <Receipt className="w-4 h-4" />
                   </button>
-                  <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowIssuesFor(null);}} className={`p-2 rounded-lg transition-colors border ${showPayoutFor === prop.id ? 'bg-emerald-600 text-white border-emerald-700 shadow-md' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100'}`} title="تحويل للمالك">
+                  <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowIssuesFor(null);}} className={`p-2 rounded-lg transition-colors border د.أ {showPayoutFor === prop.id ? 'bg-emerald-600 text-white border-emerald-700 shadow-md' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100'}`} title="تحويل للمالك">
                     {prop.payoutStatus === 'Paid to Landlord' ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />}
                   </button>
 
@@ -640,18 +652,18 @@ export default function ClientProfilePage() {
                     <div className="flex justify-between items-end mb-2">
                       <div>
                         <p className="text-xs font-bold text-slate-500 mb-1">إجمالي قيمة العقد (المتوقع)</p>
-                        <p className="text-lg font-black text-slate-900">${totalExpected.toLocaleString()}</p>
+                        <p className="text-lg font-black text-slate-900">د.أ {totalExpected.toLocaleString()}</p>
                       </div>
                       <div className="text-left">
                         <p className="text-xs font-bold text-slate-500 mb-1">المتبقي للتحصيل</p>
-                        <p className="text-lg font-black text-rose-600">${remaining.toLocaleString()}</p>
+                        <p className="text-lg font-black text-rose-600">د.أ {remaining.toLocaleString()}</p>
                       </div>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
                       <div className="bg-emerald-500 h-2.5 rounded-full" style={{ width: `${percent}%` }}></div>
                     </div>
                     <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
-                      <span>تم التحصيل: ${totalCollected.toLocaleString()} ({percent}%)</span>
+                      <span>تم التحصيل: د.أ {totalCollected.toLocaleString()} ({percent}%)</span>
                       <span>100%</span>
                     </div>
                   </div>
@@ -683,11 +695,27 @@ export default function ClientProfilePage() {
                           prop.rentCycles?.map(cycle => (
                             <tr key={cycle.id} className="hover:bg-slate-50 transition-colors">
                               <td className="py-3 px-3 text-sm font-bold text-slate-800">{cycle.dueDate}</td>
-                              <td className="py-3 px-3 text-sm font-bold text-indigo-700">${cycle.amount}</td>
+                              <td className="py-3 px-3 text-sm font-bold text-indigo-700">د.أ {cycle.amount}</td>
                               <td className="py-3 px-3 text-sm font-bold">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                   <input type="checkbox" checked={cycle.receivedFromTenant} onChange={(e) => {
-                                    const updated = properties.map(p => p.id === prop.id ? {...p, rentCycles: p.rentCycles?.map(c => c.id === cycle.id ? {...c, receivedFromTenant: e.target.checked} : c)} : p);
+                                    const updated = properties.map(p => {
+                                      if (p.id === prop.id) {
+                                        const newCycles = p.rentCycles?.map(c => c.id === cycle.id ? {...c, receivedFromTenant: e.target.checked} : c) || [];
+                                        const firstUnpaid = newCycles.find(c => !c.receivedFromTenant);
+                                        const nextDate = firstUnpaid ? firstUnpaid.dueDate : p.endDate;
+                                        
+                                        let newStatus = p.status;
+                                        if (nextDate && new Date(nextDate) < new Date() && newStatus === 'نشط') {
+                                           newStatus = 'متأخر';
+                                        } else if (nextDate && new Date(nextDate) >= new Date() && newStatus === 'متأخر') {
+                                           newStatus = 'نشط';
+                                        }
+                                        
+                                        return {...p, rentCycles: newCycles, nextRentDate: nextDate, status: newStatus};
+                                      }
+                                      return p;
+                                    });
                                     setProperties(updated);
                                   }} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600" />
                                   <span className={cycle.receivedFromTenant ? "text-emerald-600" : "text-slate-500"}>
@@ -754,14 +782,14 @@ export default function ClientProfilePage() {
                             <p className="text-sm font-bold text-slate-800">{exp.description}</p>
                             <p className="text-xs font-semibold text-slate-500 mt-0.5">{exp.date}</p>
                           </div>
-                          <span className="font-extrabold text-rose-600">${exp.amount}</span>
+                          <span className="font-extrabold text-rose-600">د.أ {exp.amount}</span>
                         </div>
                       ))
                     )}
                   </div>
                   <form onSubmit={(e) => handleAddExpense(e, prop.id)} className="flex flex-wrap gap-3">
                     <input type="text" placeholder="وصف المصروف (مثال: صيانة سباكة)..." value={newExpenseDesc} onChange={(e) => setNewExpenseDesc(e.target.value)} className="flex-1 min-w-[200px] px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-slate-900 outline-none" required />
-                    <input type="number" placeholder="المبلغ $" value={newExpenseAmt} onChange={(e) => setNewExpenseAmt(e.target.value)} className="w-24 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-slate-900 outline-none" required />
+                    <input type="number" placeholder="المبلغ د.أ " value={newExpenseAmt} onChange={(e) => setNewExpenseAmt(e.target.value)} className="w-24 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-slate-900 outline-none" required />
                     <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 text-sm shadow-sm whitespace-nowrap">إضافة</button>
                   </form>
                 </div>
