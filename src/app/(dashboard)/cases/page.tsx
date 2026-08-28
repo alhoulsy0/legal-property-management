@@ -131,6 +131,28 @@ function CasesPageContent() {
     return matchesSearch && matchesCourt && matchesType && matchesStatus;
   });
 
+  const getNextActivityDate = (caseId: string) => {
+    const caseHearings = hearings.filter(h => h.caseId === caseId);
+    const now = Date.now();
+    const dates = caseHearings
+      .flatMap(h => {
+        const list = [];
+        if (h.nextSessionDate) list.push(new Date(h.nextSessionDate).getTime());
+        if (h.sessionDate) list.push(new Date(h.sessionDate).getTime());
+        return list;
+      })
+      .filter(time => time >= now);
+
+    if (dates.length === 0) return Infinity;
+    return Math.min(...dates);
+  };
+
+  const sortedCases = [...filteredCases].sort((a, b) => {
+    const dateA = getNextActivityDate(a.id);
+    const dateB = getNextActivityDate(b.id);
+    return dateA - dateB;
+  });
+
   const filteredWakalas = wakalas.filter(w => {
     const client = clients.find(cl => cl.id === w.clientId);
     const clientName = client ? client.name : "";
@@ -444,7 +466,7 @@ function CasesPageContent() {
       {/* Tab Render Switch */}
       {activeTab === "cases" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCases.map(c => {
+          {sortedCases.map(c => {
             const client = clients.find(cl => cl.id === c.clientId);
             return (
               <div key={c.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
@@ -483,6 +505,32 @@ function CasesPageContent() {
                       <span className="text-slate-900 font-extrabold">{c.caseType}</span>
                     </div>
                   </div>
+                  
+                  {/* Next Activity Indicator */}
+                  {(() => {
+                    const nextActTime = getNextActivityDate(c.id);
+                    if (nextActTime !== Infinity) {
+                      const dateStr = new Date(nextActTime).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
+                      return (
+                        <div className="flex justify-between items-center bg-indigo-50 border border-indigo-100 p-2.5 rounded-xl text-xs font-bold text-indigo-950 mt-3">
+                          <span className="text-indigo-650 flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-indigo-700" />
+                            <span>النشاط القادم:</span>
+                          </span>
+                          <span className="bg-indigo-600 text-white px-2 py-0.5 rounded text-[10px]">{dateStr}</span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="flex justify-between items-center bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-xs font-bold text-slate-500 mt-3">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          <span>النشاط القادم:</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400">لا يوجد نشاط مجدول</span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="mt-4 pt-3 flex items-center justify-between">
