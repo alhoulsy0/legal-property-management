@@ -92,6 +92,7 @@ export default function ClientProfilePage() {
     setNewPropName(""); setNewPropType("سكني"); setNewPropLocation(""); setNewPropTenant(""); setNewPropFreq("شهري (الأول من الشهر)"); setNewPropStatus("نشط"); setNewPropRev(""); setNewPropRentAmount(""); setNewPropDuration(""); setUploadedFiles([]);
     setStartDate(""); setEndDate(""); setNextRentDate("");
     setIsAdding(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const openEdit = (prop: PropertyData) => {
@@ -99,6 +100,7 @@ export default function ClientProfilePage() {
     setNewPropName(prop.name); setNewPropType(prop.type); setNewPropLocation(prop.location); setNewPropTenant(prop.tenant !== "N/A" ? prop.tenant : ""); setNewPropFreq(prop.paymentFreq); setNewPropStatus(prop.status); setNewPropRev(prop.revenue.toString()); setNewPropRentAmount(prop.rentAmount?.toString() || ""); setNewPropDuration(prop.durationMonths?.toString() || ""); setUploadedFiles(prop.documents || []);
     setStartDate(prop.startDate || ""); setEndDate(prop.endDate || ""); setNextRentDate(prop.nextRentDate || "");
     setIsAdding(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDuplicateProperty = (prop: PropertyData) => {
@@ -480,41 +482,41 @@ export default function ClientProfilePage() {
 
           return (
           <div key={prop.id} className="border-b border-slate-200 last:border-0 flex flex-col justify-between group transition-colors hover:bg-slate-50/50">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center py-4">
+            <div className="grid grid-cols-12 gap-4 items-center py-4 min-w-[900px]">
                {/* Info Col */}
-               <div className="col-span-1 lg:col-span-3 flex items-center gap-3">
-                 <div className="p-2.5 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
-                   <Building className="w-5 h-5 text-slate-800" />
+               <div className="col-span-3 flex items-center gap-3">
+                 <div className="p-3 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
+                   <Building className="w-6 h-6 text-slate-800" />
                  </div>
                  <div className="min-w-0">
-                   <h3 className="text-sm font-extrabold text-slate-900 truncate">{prop.name}</h3>
-                   <p className="text-xs font-bold text-slate-500 truncate">{prop.type} • {prop.location}</p>
+                   <h3 className="text-base font-extrabold text-slate-900 truncate">{prop.name}</h3>
+                   <p className="text-sm font-bold text-slate-500 truncate">{prop.type} • {prop.location}</p>
                  </div>
                </div>
 
                {/* Tenant */}
-               <div className="col-span-1 lg:col-span-2">
-                 <p className="text-[10px] font-bold text-slate-400 mb-0.5 uppercase tracking-wider">المستأجر</p>
-                 <p className="text-sm font-bold text-slate-800 truncate">{prop.tenant}</p>
+               <div className="col-span-2">
+                 <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">المستأجر</p>
+                 <p className="text-base font-bold text-slate-800 truncate">{prop.tenant}</p>
                </div>
 
                {/* Rent */}
-               <div className="col-span-1 lg:col-span-2">
-                 <p className="text-[10px] font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الإيجار الشهري</p>
-                 <p className="text-sm font-black text-indigo-700">${prop.rentAmount?.toLocaleString() || prop.revenue?.toLocaleString()}</p>
+               <div className="col-span-2">
+                 <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الإيجار الشهري</p>
+                 <p className="text-base font-black text-indigo-700">${prop.rentAmount?.toLocaleString() || prop.revenue?.toLocaleString()}</p>
                </div>
 
                {/* Dates / Status */}
-               <div className="col-span-1 lg:col-span-2">
-                  <p className="text-[10px] font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الاستحقاق القادم</p>
-                  <p className={`text-sm font-bold ${isRentLate ? 'text-rose-600' : 'text-slate-800'}`}>
+               <div className="col-span-2">
+                  <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الاستحقاق القادم</p>
+                  <p className={`text-base font-bold ${isRentLate ? 'text-rose-600' : 'text-slate-800'}`}>
                     {prop.nextRentDate || "غير محدد"}
-                    {isRentLate && <span className="ml-1.5 text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-md">متأخر</span>}
+                    {isRentLate && <span className="ml-2 text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md">متأخر</span>}
                   </p>
                </div>
 
-               <div className="col-span-1 lg:col-span-1 flex items-center">
-                  <span className={`px-2 py-1 text-[10px] font-extrabold rounded-lg shadow-sm border whitespace-nowrap ${
+               <div className="col-span-1 flex items-center">
+                  <span className={`px-2.5 py-1 text-xs font-extrabold rounded-lg shadow-sm border whitespace-nowrap ${
                     prop.status === 'نشط' || prop.status === 'Active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                     prop.status === 'متأخر' || prop.status === 'Delayed' ? 'bg-amber-50 text-amber-800 border-amber-200' :
                     prop.status === 'محجوز' ? 'bg-slate-800 text-white border-slate-900' :
@@ -525,32 +527,32 @@ export default function ClientProfilePage() {
                </div>
 
                {/* Actions Array */}
-               <div className="col-span-1 lg:col-span-2 flex items-center justify-end gap-1.5 overflow-x-auto custom-scrollbar">
+               <div className="col-span-2 flex items-center justify-end gap-2 overflow-x-auto custom-scrollbar pb-2 xl:pb-0">
                   {prop.documents && prop.documents.length > 0 && (
-                    <button onClick={() => handleDownload(prop.documents![0].name)} className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100" title="تحميل المستندات">
-                      <FileText className="w-4 h-4" />
+                    <button onClick={() => handleDownload(prop.documents![0].name)} className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100" title="تحميل المستندات">
+                      <FileText className="w-5 h-5" />
                     </button>
                   )}
-                  <button onClick={() => {setShowRentCyclesFor(showRentCyclesFor === prop.id ? null : prop.id); setShowIssuesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-1.5 rounded-lg transition-colors border ${showRentCyclesFor === prop.id ? 'bg-indigo-600 text-white border-indigo-700' : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-indigo-100'}`} title="جدول الدفعات">
-                    <CalendarIcon className="w-4 h-4" />
+                  <button onClick={() => {setShowRentCyclesFor(showRentCyclesFor === prop.id ? null : prop.id); setShowIssuesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showRentCyclesFor === prop.id ? 'bg-indigo-600 text-white border-indigo-700' : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-indigo-100'}`} title="جدول الدفعات">
+                    <CalendarIcon className="w-5 h-5" />
                   </button>
-                  <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-1.5 rounded-lg transition-colors border ${showIssuesFor === prop.id ? 'bg-amber-600 text-white border-amber-700' : 'text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-100'}`} title="قضايا ومشاكل">
-                    <AlertTriangle className="w-4 h-4" />
+                  <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showIssuesFor === prop.id ? 'bg-amber-600 text-white border-amber-700' : 'text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-100'}`} title="قضايا ومشاكل">
+                    <AlertTriangle className="w-5 h-5" />
                   </button>
-                  <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowIssuesFor(null); setShowPayoutFor(null);}} className={`p-1.5 rounded-lg transition-colors border ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200'}`} title="المصروفات">
-                    <Receipt className="w-4 h-4" />
+                  <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowIssuesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200'}`} title="المصروفات">
+                    <Receipt className="w-5 h-5" />
                   </button>
-                  <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowIssuesFor(null);}} className={`p-1.5 rounded-lg transition-colors border ${showPayoutFor === prop.id ? 'bg-emerald-600 text-white border-emerald-700' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100'}`} title="تحويل للمالك">
-                    {prop.payoutStatus === 'Paid to Landlord' ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                  <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowIssuesFor(null);}} className={`p-2 rounded-lg transition-colors border ${showPayoutFor === prop.id ? 'bg-emerald-600 text-white border-emerald-700' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100'}`} title="تحويل للمالك">
+                    {prop.payoutStatus === 'Paid to Landlord' ? <CheckCircle2 className="w-5 h-5" /> : <Send className="w-5 h-5" />}
                   </button>
 
-                  <div className="w-px h-5 bg-slate-200 mx-0.5"></div>
+                  <div className="w-px h-6 bg-slate-200 mx-1"></div>
 
-                  <button onClick={() => handleDuplicateProperty(prop)} className="p-1.5 text-slate-400 hover:text-blue-600 bg-white hover:bg-blue-50 rounded-lg transition-colors border border-slate-200 shadow-sm" title="نسخ العقار">
-                    <Copy className="w-4 h-4" />
+                  <button onClick={() => handleDuplicateProperty(prop)} className="p-2 text-slate-400 hover:text-blue-600 bg-white hover:bg-blue-50 rounded-lg transition-colors border border-slate-200 shadow-sm" title="نسخ العقار">
+                    <Copy className="w-5 h-5" />
                   </button>
-                  <button onClick={() => openEdit(prop)} className="p-1.5 text-slate-400 hover:text-slate-900 bg-white hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 shadow-sm" title="تعديل">
-                    <Edit2 className="w-4 h-4" />
+                  <button onClick={() => openEdit(prop)} className="p-2 text-slate-400 hover:text-slate-900 bg-white hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 shadow-sm" title="تعديل">
+                    <Edit2 className="w-5 h-5" />
                   </button>
                </div>
             </div>
