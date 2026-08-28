@@ -79,6 +79,8 @@ export type LegalCaseData = {
   caseType: "حقوقي" | "جزائي" | "شرعي";
   status: string; // مفتوحة، مغلقة، قيد الاستئناف، حكم فاصِل...
   claimAmount: number;
+  judgment_date?: string;
+  appeal_deadline?: string;
 };
 
 export type HearingData = {

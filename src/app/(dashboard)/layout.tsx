@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Scale, LogOut, LayoutDashboard, Users, FileText } from "lucide-react";
+import { Scale, LogOut, LayoutDashboard, Users, FileText, Calendar, DollarSign } from "lucide-react";
 import { GlobalProvider } from "./GlobalProvider";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -16,15 +16,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <nav className="flex-1 p-4 space-y-2">
             <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition-all font-bold group">
               <LayoutDashboard className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
-              اللوحة الرئيسية
+              لوحة القيادة
             </Link>
             <Link href="/clients" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition-all font-bold group">
               <Users className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
-              الموكلين (الملاك)
+              الموكلين والوكالات
             </Link>
             <Link href="/cases" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition-all font-bold group">
-              <FileText className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
-              القضايا والنزاعات
+              <Scale className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+              سجل القضايا
+            </Link>
+            <Link href="/cases?tab=agenda" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition-all font-bold group">
+              <Calendar className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+              أجندة الجلسات
+            </Link>
+            <Link href="/cases?tab=financials" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition-all font-bold group">
+              <DollarSign className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+              المالية
             </Link>
           </nav>
 

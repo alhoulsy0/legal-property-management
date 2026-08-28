@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useGlobal, LegalCaseData, WakalaData, HearingData, LegalFinancialData } from "../GlobalProvider";
 import { Scale, FileText, Calendar, DollarSign, Plus, Search, User, Clock, ArrowLeft, AlertTriangle, ShieldCheck, Check, Trash2, X, Activity } from "lucide-react";
 
-export default function CasesPage() {
+function CasesPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+
   const { 
     clients, 
     cases, setCases, 
@@ -13,8 +18,16 @@ export default function CasesPage() {
     legalFinancials, setLegalFinancials 
   } = useGlobal();
 
-  // Active Tab: "cases" | "wakalas"
-  const [activeTab, setActiveTab] = useState<"cases" | "wakalas">("cases");
+  // Active Tab state synced with URL parameter
+  const [activeTab, setActiveTab] = useState<"cases" | "wakalas" | "agenda" | "financials">("cases");
+
+  useEffect(() => {
+    if (tabParam === "wakalas" || tabParam === "agenda" || tabParam === "financials" || tabParam === "cases") {
+      setActiveTab(tabParam as any);
+    } else {
+      setActiveTab("cases");
+    }
+  }, [tabParam]);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,7 +38,6 @@ export default function CasesPage() {
   // Modals Toggle
   const [showAddCaseModal, setShowAddCaseModal] = useState(false);
   const [showAddWakalaModal, setShowAddWakalaModal] = useState(false);
-  const [selectedCaseDetail, setSelectedCaseDetail] = useState<LegalCaseData | null>(null);
 
   // Form States - Case
   const [newCaseNumber, setNewCaseNumber] = useState("");
@@ -44,21 +56,6 @@ export default function CasesPage() {
   const [newWakalaType, setNewWakalaType] = useState<WakalaData["type"]>("عامة");
   const [newWakalaDate, setNewWakalaDate] = useState(new Date().toISOString().split("T")[0]);
   const [wakalaError, setWakalaError] = useState("");
-
-  // Case Detail Pane Form States
-  const [detailTab, setDetailTab] = useState<"hearings" | "financials">("hearings");
-  
-  // New Hearing Form States
-  const [newHearingDate, setNewHearingDate] = useState("");
-  const [newHearingPanel, setNewHearingPanel] = useState("");
-  const [newHearingNotes, setNewHearingNotes] = useState("");
-  const [newHearingNextDate, setNewHearingNextDate] = useState("");
-  const [newHearingActions, setNewHearingActions] = useState("");
-
-  // New Financial Expense Form States
-  const [newFinType, setNewFinType] = useState<LegalFinancialData["type"]>("رسوم محاكم");
-  const [newFinAmt, setNewFinAmt] = useState("");
-  const [newFinDate, setNewFinDate] = useState(new Date().toISOString().split("T")[0]);
 
   // Metric Computations
   const totalCases = cases.length;
@@ -92,6 +89,11 @@ export default function CasesPage() {
     );
   });
 
+  // Hearings Agenda logic (Upcoming hearings with nextSessionDate)
+  const agendaHearings = hearings
+    .filter(h => h.nextSessionDate)
+    .sort((a, b) => new Date(a.nextSessionDate!).getTime() - new Date(b.nextSessionDate!).getTime());
+
   // Handlers - Add Case
   const handleAddCaseSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +104,6 @@ export default function CasesPage() {
       return;
     }
 
-    // Enforce unique Case + Court + Year validation
     const duplicate = cases.some(
       c => c.caseNumber === newCaseNumber && c.year === Number(newCaseYear) && c.courtName === newCaseCourt
     );
@@ -125,7 +126,6 @@ export default function CasesPage() {
 
     setCases([...cases, newCaseObj]);
     setShowAddCaseModal(false);
-    // Reset Form
     setNewCaseNumber("");
     setNewCaseYear(new Date().getFullYear());
     setNewCaseClientId("");
@@ -165,64 +165,31 @@ export default function CasesPage() {
     setNewWakalaNotary("");
   };
 
-  // Handlers - Add Hearing
-  const handleAddHearing = (e: React.FormEvent, caseId: string) => {
-    e.preventDefault();
-    if (!newHearingDate) return;
-
-    const newHearing: HearingData = {
-      id: `h-${Date.now()}`,
-      caseId,
-      sessionDate: new Date(newHearingDate).toISOString(),
-      judicialPanel: newHearingPanel,
-      notes: newHearingNotes,
-      nextSessionDate: newHearingNextDate ? new Date(newHearingNextDate).toISOString() : undefined,
-      requiredActions: newHearingActions
-    };
-
-    setHearings([...hearings, newHearing]);
-    
-    // Reset Form
-    setNewHearingDate("");
-    setNewHearingPanel("");
-    setNewHearingNotes("");
-    setNewHearingNextDate("");
-    setNewHearingActions("");
-  };
-
-  // Handlers - Add Financial Record
-  const handleAddFinancial = (e: React.FormEvent, caseId: string) => {
-    e.preventDefault();
-    if (!newFinAmt) return;
-
-    const newFin: LegalFinancialData = {
-      id: `f-${Date.now()}`,
-      caseId,
-      type: newFinType,
-      amount: Number(newFinAmt),
-      date: newFinDate
-    };
-
-    setLegalFinancials([...legalFinancials, newFin]);
-    setNewFinAmt("");
-  };
-
-  // Toggle Wakala Status
   const toggleWakalaStatus = (id: string) => {
     setWakalas(wakalas.map(w => w.id === id ? { ...w, status: w.status === "Active" ? "Revoked" : "Active" } : w));
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6 text-right">
       
       {/* Title Panel */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">إدارة القضايا والوكالات</h1>
-          <p className="text-slate-500 mt-1 text-sm font-semibold">متابعة ملفات القضايا الأردنية، الوكالات، الجلسات، والمصاريف القضائية</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            {activeTab === "cases" && "سجل القضايا القضائية"}
+            {activeTab === "wakalas" && "سجل الوكالات العدلية"}
+            {activeTab === "agenda" && "أجندة وجدول الجلسات"}
+            {activeTab === "financials" && "الحسابات والمصاريف القضائية"}
+          </h1>
+          <p className="text-slate-500 mt-1 text-sm font-semibold">
+            {activeTab === "cases" && "متابعة وتصنيف ملفات القضايا المنظورة أمام المحاكم الأردنية"}
+            {activeTab === "wakalas" && "توثيق الوكالات الخاصة والعامة الصادرة عن كاتب العدل"}
+            {activeTab === "agenda" && "جدول مواعيد جلسات المحكمة القادمة والقرارات المطلوبة للتقديم"}
+            {activeTab === "financials" && "إدارة النفقات والرسوم وأتعاب المحاماة والخبرة لكل قضية"}
+          </p>
         </div>
         <div className="flex gap-2">
-          {activeTab === "cases" ? (
+          {activeTab === "cases" && (
             <button
               onClick={() => setShowAddCaseModal(true)}
               className="bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-colors font-bold flex items-center gap-2 text-sm shadow-md"
@@ -230,7 +197,8 @@ export default function CasesPage() {
               <Plus className="w-5 h-5" />
               <span>تسجيل قضية جديدة</span>
             </button>
-          ) : (
+          )}
+          {activeTab === "wakalas" && (
             <button
               onClick={() => setShowAddWakalaModal(true)}
               className="bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-colors font-bold flex items-center gap-2 text-sm shadow-md"
@@ -242,7 +210,7 @@ export default function CasesPage() {
         </div>
       </div>
 
-      {/* Metrics Summary (Shown only when in Cases Tab) */}
+      {/* Renders Metrics summary for current tabs */}
       {activeTab === "cases" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
@@ -260,7 +228,7 @@ export default function CasesPage() {
               <div className="p-2 bg-emerald-50 rounded-xl text-emerald-700">
                 <Activity className="w-5 h-5" />
               </div>
-              <h3 className="text-sm font-bold">القضايا المنظورة (النشطة)</h3>
+              <h3 className="text-sm font-bold">قيد النظر (النشطة)</h3>
             </div>
             <p className="text-3xl font-extrabold text-emerald-600">{activeCases}</p>
           </div>
@@ -287,35 +255,53 @@ export default function CasesPage() {
         </div>
       )}
 
-      {/* Tabs Selection */}
+      {/* Tabs Menu Navigation */}
       <div className="flex border-b border-slate-200">
         <button
-          onClick={() => { setActiveTab("cases"); setSearchQuery(""); }}
+          onClick={() => router.push("/cases?tab=cases")}
           className={`py-3 px-6 font-bold text-sm transition-all border-b-2 ${
             activeTab === "cases"
               ? "border-slate-900 text-slate-900"
               : "border-transparent text-slate-500 hover:text-slate-900"
           }`}
         >
-          ملفات القضايا القانونية
+          سجل القضايا القضائية
         </button>
         <button
-          onClick={() => { setActiveTab("wakalas"); setSearchQuery(""); }}
+          onClick={() => router.push("/cases?tab=wakalas")}
           className={`py-3 px-6 font-bold text-sm transition-all border-b-2 ${
             activeTab === "wakalas"
               ? "border-slate-900 text-slate-900"
               : "border-transparent text-slate-500 hover:text-slate-900"
           }`}
         >
-          سجل الوكالات (Power of Attorney)
+          الوكالات العدلية
+        </button>
+        <button
+          onClick={() => router.push("/cases?tab=agenda")}
+          className={`py-3 px-6 font-bold text-sm transition-all border-b-2 ${
+            activeTab === "agenda"
+              ? "border-slate-900 text-slate-900"
+              : "border-transparent text-slate-500 hover:text-slate-900"
+          }`}
+        >
+          أجندة الجلسات
+        </button>
+        <button
+          onClick={() => router.push("/cases?tab=financials")}
+          className={`py-3 px-6 font-bold text-sm transition-all border-b-2 ${
+            activeTab === "financials"
+              ? "border-slate-900 text-slate-900"
+              : "border-transparent text-slate-500 hover:text-slate-900"
+          }`}
+        >
+          المالية والرسوم
         </button>
       </div>
 
-      {/* Control Filters and Search bar */}
-      <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          
-          {/* Search box */}
+      {/* Search and filtering block */}
+      {(activeTab === "cases" || activeTab === "wakalas") && (
+        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:w-80">
             <Search className="absolute right-3.5 top-3 w-4 h-4 text-slate-500" />
             <input
@@ -323,11 +309,10 @@ export default function CasesPage() {
               placeholder={activeTab === "cases" ? "ابحث برقم الدعوى أو الموكل..." : "ابحث برقم الوكالة أو كاتب العدل..."}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pr-10 pl-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-600 focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none"
+              className="w-full pr-10 pl-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-600 focus:ring-2 focus:ring-slate-900 outline-none"
             />
           </div>
 
-          {/* Tab Specific Filters */}
           {activeTab === "cases" && (
             <div className="flex flex-wrap gap-3 w-full md:w-auto">
               <select
@@ -366,11 +351,10 @@ export default function CasesPage() {
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* Main Content Area */}
-      {activeTab === "cases" ? (
-        // Cases Grid List
+      {/* Tab Render Switch */}
+      {activeTab === "cases" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCases.map(c => {
             const client = clients.find(cl => cl.id === c.clientId);
@@ -378,8 +362,8 @@ export default function CasesPage() {
               <div key={c.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start mb-4">
-                    <span className="text-xs font-black text-slate-500 uppercase tracking-wider">سنة {c.year}</span>
-                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-extrabold tracking-wide uppercase ${
+                    <span className="text-xs font-black text-slate-500">سنة {c.year}</span>
+                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase ${
                       c.status === "مفتوحة" ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"
                     }`}>
                       {c.status}
@@ -413,14 +397,11 @@ export default function CasesPage() {
                     <p className="text-base font-black text-indigo-700 mt-0.5">د.أ {c.claimAmount.toLocaleString()}</p>
                   </div>
                   <button 
-                    onClick={() => {
-                      setSelectedCaseDetail(c);
-                      setDetailTab("hearings");
-                    }}
+                    onClick={() => router.push(`/cases/${c.id}`)}
                     className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
                   >
                     <span>التفاصيل والجلسات</span>
-                    <ArrowLeft className="w-3.5 h-3.5 rotate-180 text-slate-600" />
+                    <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
                   </button>
                 </div>
               </div>
@@ -432,20 +413,21 @@ export default function CasesPage() {
             </div>
           )}
         </div>
-      ) : (
-        // Wakalas (Power of Attorney) Table List
+      )}
+
+      {activeTab === "wakalas" && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-right border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="py-4 px-6 text-xs font-black text-slate-500 uppercase tracking-wider">رقم الوكالة</th>
-                  <th className="py-4 px-6 text-xs font-black text-slate-500 uppercase tracking-wider">الموكل</th>
-                  <th className="py-4 px-6 text-xs font-black text-slate-500 uppercase tracking-wider">كاتب العدل</th>
-                  <th className="py-4 px-6 text-xs font-black text-slate-500 uppercase tracking-wider">النوع</th>
-                  <th className="py-4 px-6 text-xs font-black text-slate-500 uppercase tracking-wider">تاريخ الإصدار</th>
-                  <th className="py-4 px-6 text-xs font-black text-slate-500 uppercase tracking-wider">الحالة</th>
-                  <th className="py-4 px-6 text-xs font-black text-slate-500 uppercase tracking-wider text-center">الإجراءات</th>
+                  <th className="py-4 px-6 text-xs font-black text-slate-500">رقم الوكالة</th>
+                  <th className="py-4 px-6 text-xs font-black text-slate-500">الموكل</th>
+                  <th className="py-4 px-6 text-xs font-black text-slate-500">كاتب العدل</th>
+                  <th className="py-4 px-6 text-xs font-black text-slate-500">النوع</th>
+                  <th className="py-4 px-6 text-xs font-black text-slate-500">تاريخ الإصدار</th>
+                  <th className="py-4 px-6 text-xs font-black text-slate-500">الحالة</th>
+                  <th className="py-4 px-6 text-xs font-black text-slate-500 text-center">الإجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -482,14 +464,103 @@ export default function CasesPage() {
                     </tr>
                   );
                 })}
-                {filteredWakalas.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-sm font-bold text-slate-400 italic">لم يتم العثور على أي وكالات مسجلة.</td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {activeTab === "agenda" && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6">
+          <h3 className="text-lg font-extrabold text-slate-900 mb-6 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-slate-600" />
+            <span>جدول مواعيد الجلسات القادمة</span>
+          </h3>
+          
+          {agendaHearings.length === 0 ? (
+            <p className="text-sm font-bold text-slate-500 italic p-6 text-center bg-slate-50 rounded-2xl border border-dashed">لا توجد جلسات مجدولة قريباً.</p>
+          ) : (
+            <div className="space-y-4">
+              {agendaHearings.map(h => {
+                const c = cases.find(cs => cs.id === h.caseId);
+                const client = c ? clients.find(cl => cl.id === c.clientId) : null;
+                return (
+                  <div key={h.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-md">
+                          ميعاد الجلسة: {new Date(h.nextSessionDate!).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                        {c && (
+                          <span className="text-xs font-extrabold text-slate-800">رقم القضية: {c.caseNumber} / {c.year} ({c.courtName})</span>
+                        )}
+                      </div>
+                      <p className="text-sm font-extrabold text-slate-900 mt-1">الموكل: {client ? client.name : "غير معروف"}</p>
+                      {h.requiredActions && (
+                        <p className="text-xs text-rose-700 font-bold mt-1 bg-rose-50/50 p-2 rounded-lg w-fit border border-rose-100">الإجراء المطلوب: {h.requiredActions}</p>
+                      )}
+                    </div>
+                    {c && (
+                      <button 
+                        onClick={() => router.push(`/cases/${c.id}`)}
+                        className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1 shrink-0 shadow-sm"
+                      >
+                        <span>فتح ملف القضية</span>
+                        <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "financials" && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-6">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+            <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-slate-600" />
+              <span>كشف حساب النفقات القضائية العام</span>
+            </h3>
+            <span className="text-base font-black text-rose-600">إجمالي المصاريف المسجلة: د.أ {totalExpenses.toLocaleString()}</span>
+          </div>
+
+          {legalFinancials.length === 0 ? (
+            <p className="text-sm font-bold text-slate-500 italic p-6 text-center bg-slate-50 rounded-2xl border border-dashed">لم يتم قيد أي عمليات دفع أو رسوم بعد.</p>
+          ) : (
+            <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-right text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                      <th className="py-3 px-6 font-extrabold">القضية (رقم/سنة)</th>
+                      <th className="py-3 px-6 font-extrabold">الموكل</th>
+                      <th className="py-3 px-6 font-extrabold">نوع الرسم/المصروف</th>
+                      <th className="py-3 px-6 font-extrabold">التاريخ</th>
+                      <th className="py-3 px-6 font-extrabold text-left">المبلغ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {legalFinancials.map(f => {
+                      const c = cases.find(cs => cs.id === f.caseId);
+                      const client = c ? clients.find(cl => cl.id === c.clientId) : null;
+                      return (
+                        <tr key={f.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3.5 px-6 font-black text-slate-900">{c ? `${c.caseNumber} / ${c.year}` : "قضية مؤرشفة"}</td>
+                          <td className="py-3.5 px-6 font-bold text-slate-800">{client ? client.name : "غير معروف"}</td>
+                          <td className="py-3.5 px-6 font-bold text-slate-600">{f.type}</td>
+                          <td className="py-3.5 px-6 font-semibold text-slate-600">{f.date}</td>
+                          <td className="py-3.5 px-6 font-black text-rose-600 text-left">د.أ {f.amount.toLocaleString()}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -737,320 +808,14 @@ export default function CasesPage() {
         </div>
       )}
 
-      {/* ========================================== */}
-      {/* CASE DETAIL & HEARINGS & EXPENSES MODAL    */}
-      {/* ========================================== */}
-      {selectedCaseDetail && (() => {
-        const client = clients.find(cl => cl.id === selectedCaseDetail.clientId);
-        // Find Active Wakala for this client
-        const clientWakala = wakalas.find(w => w.clientId === selectedCaseDetail.clientId && w.status === "Active");
-        // Get case hearings
-        const caseHearings = hearings.filter(h => h.caseId === selectedCaseDetail.id).sort((a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime());
-        // Get case financials
-        const caseFinancialsList = legalFinancials.filter(f => f.caseId === selectedCaseDetail.id).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        const totalExpensesSum = caseFinancialsList.reduce((sum, f) => sum + f.amount, 0);
-
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-              
-              {/* Header */}
-              <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-start">
-                <div>
-                  <h3 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-                    <Scale className="w-6 h-6 text-slate-700" />
-                    <span>ملف الدعوى رقم: {selectedCaseDetail.caseNumber} / {selectedCaseDetail.year}</span>
-                  </h3>
-                  <p className="text-xs font-bold text-slate-500 mt-1">{selectedCaseDetail.courtName} - {selectedCaseDetail.caseType}</p>
-                </div>
-                <div className="flex gap-2">
-                  <select 
-                    value={selectedCaseDetail.status}
-                    onChange={(e) => {
-                      setCases(cases.map(c => c.id === selectedCaseDetail.id ? { ...c, status: e.target.value } : c));
-                      setSelectedCaseDetail({ ...selectedCaseDetail, status: e.target.value });
-                    }}
-                    className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none shadow-sm cursor-pointer"
-                  >
-                    <option value="مفتوحة">مفتوحة</option>
-                    <option value="مغلقة">مغلقة</option>
-                  </select>
-                  <button 
-                    onClick={() => setSelectedCaseDetail(null)} 
-                    className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Info panel */}
-              <div className="p-6 bg-slate-50/50 border-b border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm font-semibold text-slate-600">
-                <div>
-                  <span className="text-slate-500 block text-xs font-bold mb-1">الموكل والبيانات الوطنية:</span>
-                  <span className="text-slate-900 font-extrabold text-base block">{client?.name || "غير معروف"}</span>
-                  <span className="text-slate-500 text-xs mt-1 block">الرقم الوطني: {client?.nationalId || "غير متوفر"}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block text-xs font-bold mb-1">الوكالة العدلية المعمول بها:</span>
-                  {clientWakala ? (
-                    <div>
-                      <span className="text-emerald-700 font-extrabold text-sm block">{clientWakala.wakalaNumber} ({clientWakala.type})</span>
-                      <span className="text-slate-500 text-xs block">تاريخ الإصدار: {clientWakala.issueDate}</span>
-                    </div>
-                  ) : (
-                    <span className="text-rose-600 font-bold text-xs flex items-center gap-1 mt-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> لا توجد وكالة عدلية فعالة مسجلة
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <span className="text-slate-500 block text-xs font-bold mb-1">المطالبة المالية والرسوم:</span>
-                  <span className="text-slate-900 font-black block">المطالبة: د.أ {selectedCaseDetail.claimAmount.toLocaleString()}</span>
-                  <span className="text-rose-600 font-bold block text-xs mt-0.5">المصاريف: د.أ {totalExpensesSum.toLocaleString()}</span>
-                </div>
-              </div>
-
-              {/* Tabs for hearings vs financials */}
-              <div className="flex border-b border-slate-100 bg-white px-6">
-                <button 
-                  onClick={() => setDetailTab("hearings")}
-                  className={`py-3.5 px-5 font-bold text-xs tracking-wide uppercase transition-all border-b-2 ${
-                    detailTab === "hearings" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  الجلسات والقرارات ({caseHearings.length})
-                </button>
-                <button 
-                  onClick={() => setDetailTab("financials")}
-                  className={`py-3.5 px-5 font-bold text-xs tracking-wide uppercase transition-all border-b-2 ${
-                    detailTab === "financials" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  المصاريف والرسوم القضائية
-                </button>
-              </div>
-
-              {/* Content Panels */}
-              <div className="p-6 overflow-y-auto flex-1 custom-scrollbar bg-white">
-                {detailTab === "hearings" ? (
-                  // Hearings log
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    
-                    {/* Add session Form */}
-                    <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 h-fit">
-                      <h4 className="text-sm font-extrabold text-slate-900 mb-4 flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        <span>تسجيل جلسة جديدة</span>
-                      </h4>
-                      <form onSubmit={(e) => handleAddHearing(e, selectedCaseDetail.id)} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-700 mb-1">تاريخ الجلسة</label>
-                            <input 
-                              type="datetime-local" 
-                              value={newHearingDate} 
-                              onChange={e => setNewHearingDate(e.target.value)} 
-                              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900" 
-                              required 
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-700 mb-1">الهيئة القضائية</label>
-                            <input 
-                              type="text" 
-                              placeholder="مثال: القاضي أحمد الفايز" 
-                              value={newHearingPanel} 
-                              onChange={e => setNewHearingPanel(e.target.value)} 
-                              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-700 mb-1">مذكرات وقائع الجلسة</label>
-                          <textarea 
-                            rows={3} 
-                            placeholder="تفاصيل الجلسة، البينات المقدمة..." 
-                            value={newHearingNotes} 
-                            onChange={e => setNewHearingNotes(e.target.value)} 
-                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-700 mb-1">موعد الجلسة القادمة (إن وُجد)</label>
-                            <input 
-                              type="datetime-local" 
-                              value={newHearingNextDate} 
-                              onChange={e => setNewHearingNextDate(e.target.value)} 
-                              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900" 
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-700 mb-1">القرارات / الإجراءات المطلوبة</label>
-                            <input 
-                              type="text" 
-                              placeholder="تبليغ شهود، دفع رسوم..." 
-                              value={newHearingActions} 
-                              onChange={e => setNewHearingActions(e.target.value)} 
-                              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
-                            />
-                          </div>
-                        </div>
-
-                        <button 
-                          type="submit" 
-                          className="w-full py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
-                        >
-                          تأكيد حفظ الجلسة
-                        </button>
-                      </form>
-                    </div>
-
-                    {/* Timeline logs */}
-                    <div className="space-y-6">
-                      <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2 mb-2">
-                        <Clock className="w-4 h-4 text-slate-500" />
-                        <span>سجل الجلسات</span>
-                      </h4>
-                      {caseHearings.length === 0 ? (
-                        <p className="text-xs text-slate-500 italic p-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">لم يتم تسجيل أي جلسة لهذه القضية بعد.</p>
-                      ) : (
-                        <div className="space-y-4">
-                          {caseHearings.map(h => (
-                            <div key={h.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50 relative">
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="text-xs font-extrabold text-indigo-800">{new Date(h.sessionDate).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                                {h.judicialPanel && <span className="text-[10px] font-bold text-slate-500">{h.judicialPanel}</span>}
-                              </div>
-                              <p className="text-xs text-slate-700 font-semibold leading-relaxed">{h.notes || "لا توجد ملاحظات تفصيلية"}</p>
-                              {(h.nextSessionDate || h.requiredActions) && (
-                                <div className="mt-3 pt-2.5 border-t border-slate-200/60 grid grid-cols-2 gap-3 text-[10px] font-bold text-slate-600">
-                                  {h.nextSessionDate && (
-                                    <div>
-                                      <span className="text-slate-400 block mb-0.5">موعد الجلسة القادمة:</span>
-                                      <span className="text-amber-700">{new Date(h.nextSessionDate).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" })}</span>
-                                    </div>
-                                  )}
-                                  {h.requiredActions && (
-                                    <div>
-                                      <span className="text-slate-400 block mb-0.5">الإجراء المطلـوب:</span>
-                                      <span className="text-rose-700">{h.requiredActions}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  // Financial ledger
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    
-                    {/* Add financial expense Form */}
-                    <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 h-fit">
-                      <h4 className="text-sm font-extrabold text-slate-900 mb-4 flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        <span>تسجيل مصروف أو رسوم جديدة</span>
-                      </h4>
-                      <form onSubmit={(e) => handleAddFinancial(e, selectedCaseDetail.id)} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-700 mb-1">نوع المصروف</label>
-                            <select 
-                              value={newFinType} 
-                              onChange={e => setNewFinType(e.target.value as any)} 
-                              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 cursor-pointer"
-                            >
-                              <option value="رسوم محاكم">رسوم محاكم</option>
-                              <option value="أتعاب محاماة">أتعاب محاماة</option>
-                              <option value="أتعاب خبرة">أتعاب خبرة</option>
-                              <option value="طوابع">طوابع</option>
-                              <option value="أخرى">أخرى</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-700 mb-1">التاريخ</label>
-                            <input 
-                              type="date" 
-                              value={newFinDate} 
-                              onChange={e => setNewFinDate(e.target.value)} 
-                              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900" 
-                              required 
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-700 mb-1">القيمة (د.أ)</label>
-                          <input 
-                            type="number" 
-                            placeholder="0.00" 
-                            value={newFinAmt} 
-                            onChange={e => setNewFinAmt(e.target.value)} 
-                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
-                            required 
-                          />
-                        </div>
-
-                        <button 
-                          type="submit" 
-                          className="w-full py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
-                        >
-                          إضافة للرصيد
-                        </button>
-                      </form>
-                    </div>
-
-                    {/* Financial log */}
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-slate-500" />
-                          <span>كشف الحساب والمصاريف للقضية</span>
-                        </h4>
-                        <span className="text-xs font-black text-rose-700">مجموع المصاريف: د.أ {totalExpensesSum.toLocaleString()}</span>
-                      </div>
-                      
-                      {caseFinancialsList.length === 0 ? (
-                        <p className="text-xs text-slate-500 italic p-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">لم يتم تسجيل أي مصاريف مالية بعد.</p>
-                      ) : (
-                        <div className="bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                          <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                            <table className="w-full text-right text-xs">
-                              <thead>
-                                <tr className="bg-slate-100 text-slate-500 border-b border-slate-200">
-                                  <th className="py-2.5 px-4 font-extrabold">النوع</th>
-                                  <th className="py-2.5 px-4 font-extrabold">التاريخ</th>
-                                  <th className="py-2.5 px-4 font-extrabold text-left">المبلغ</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-200">
-                                {caseFinancialsList.map(f => (
-                                  <tr key={f.id} className="hover:bg-slate-100 transition-colors">
-                                    <td className="py-2.5 px-4 font-bold text-slate-800">{f.type}</td>
-                                    <td className="py-2.5 px-4 font-semibold text-slate-600">{f.date}</td>
-                                    <td className="py-2.5 px-4 font-black text-rose-600 text-left">د.أ {f.amount.toLocaleString()}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
+  );
+}
+
+export default function CasesPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-10 font-bold text-slate-600">جاري تحميل البيانات...</div>}>
+      <CasesPageContent />
+    </Suspense>
   );
 }
