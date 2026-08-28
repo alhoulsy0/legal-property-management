@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, DollarSign, TrendingUp, TrendingDown, Users, Activity, Calendar, CheckSquare, Clock, Plus, Scale, Building } from "lucide-react";
+import { AlertTriangle, DollarSign, TrendingUp, TrendingDown, Users, Activity, Calendar, CheckSquare, Clock, Plus, Scale, Building, ArrowRight } from "lucide-react";
 import { useGlobal } from "../GlobalProvider";
 
 export default function DashboardPage() {
@@ -143,9 +143,14 @@ export default function DashboardPage() {
       
       {/* Title & Quick Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">لوحة القيادة الموحدة</h1>
-          <p className="text-slate-500 mt-1 text-sm font-semibold">متابعة فورية للمؤشرات المالية للأملاك والعقارات بالإضافة للملفات القانونية</p>
+        <div className="flex items-center gap-4">
+          <Link href="/" className="p-2.5 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-slate-700 hover:text-slate-900 border border-slate-200">
+            <ArrowRight className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">لوحة القيادة الموحدة</h1>
+            <p className="text-slate-500 mt-1 text-sm font-semibold">متابعة فورية للمؤشرات المالية للأملاك والعقارات بالإضافة للملفات القانونية</p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Link

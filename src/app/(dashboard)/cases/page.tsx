@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGlobal, LegalCaseData, WakalaData, HearingData, LegalFinancialData } from "../GlobalProvider";
 import { Scale, FileText, Calendar, DollarSign, Plus, Search, User, Clock, ArrowLeft, ArrowRight, AlertTriangle, ShieldCheck, Check, Trash2, X, Activity } from "lucide-react";
@@ -337,19 +338,24 @@ function CasesPageContent() {
       
       {/* Title Panel */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-            {activeTab === "cases" && "سجل القضايا القضائية"}
-            {activeTab === "wakalas" && "سجل الوكالات العدلية"}
-            {activeTab === "agenda" && "أجندة وجدول الجلسات"}
-            {activeTab === "financials" && "الحسابات والمصاريف القضائية"}
-          </h1>
-          <p className="text-slate-500 mt-1 text-sm font-semibold">
-            {activeTab === "cases" && "متابعة وتصنيف ملفات القضايا المنظورة أمام المحاكم الأردنية"}
-            {activeTab === "wakalas" && "توثيق الوكالات الخاصة والعامة الصادرة عن كاتب العدل"}
-            {activeTab === "agenda" && "جدول مواعيد جلسات المحكمة القادمة والقرارات المطلوبة للتقديم"}
-            {activeTab === "financials" && "إدارة النفقات والرسوم وأتعاب المحاماة والخبرة لكل قضية"}
-          </p>
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="p-2.5 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-slate-700 hover:text-slate-900 border border-slate-200">
+            <ArrowRight className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              {activeTab === "cases" && "سجل القضايا القضائية"}
+              {activeTab === "wakalas" && "سجل الوكالات العدلية"}
+              {activeTab === "agenda" && "أجندة وجدول الجلسات"}
+              {activeTab === "financials" && "الحسابات والمصاريف القضائية"}
+            </h1>
+            <p className="text-slate-500 mt-1 text-sm font-semibold">
+              {activeTab === "cases" && "متابعة وتصنيف ملفات القضايا المنظورة أمام المحاكم الأردنية"}
+              {activeTab === "wakalas" && "توثيق الوكالات الخاصة والعامة الصادرة عن كاتب العدل"}
+              {activeTab === "agenda" && "جدول مواعيد جلسات المحكمة القادمة والقرارات المطلوبة للتقديم"}
+              {activeTab === "financials" && "إدارة النفقات والرسوم وأتعاب المحاماة والخبرة لكل قضية"}
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           {activeTab === "cases" && (
