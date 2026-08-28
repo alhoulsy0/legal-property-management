@@ -4,7 +4,7 @@ import html2canvas from "html2canvas";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowRight, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, TrendingDown, AlertTriangle, Trash2, Download, Receipt, Send, CheckCircle2, FileBarChart, Copy } from "lucide-react";
+import { ArrowRight, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, TrendingDown, AlertTriangle, Trash2, Download, Receipt, Send, CheckCircle2, FileBarChart, Copy, Archive } from "lucide-react";
 import { useGlobal, PropertyData, ExpenseData } from "../../GlobalProvider";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -36,15 +36,15 @@ export default function ClientProfilePage() {
   const [endDate, setEndDate] = useState("");
   const [nextRentDate, setNextRentDate] = useState("");
 
-  const [showExpensesFor, setShowExpensesFor] = useState<number | null>(null);
+  const [expandedPropId, setExpandedPropId] = useState<number | null>(null);
   const [newExpenseDesc, setNewExpenseDesc] = useState("");
   const [newExpenseAmt, setNewExpenseAmt] = useState("");
-
-  const [showIssuesFor, setShowIssuesFor] = useState<number | null>(null);
   const [newIssueDesc, setNewIssueDesc] = useState("");
+  
+  const [increaseRentPropId, setIncreaseRentPropId] = useState<number | null>(null);
+  const [increaseRentAmount, setIncreaseRentAmount] = useState<string>("");
+  const [increaseRentDate, setIncreaseRentDate] = useState<string>("");
 
-  const [showPayoutFor, setShowPayoutFor] = useState<number | null>(null);
-  const [showRentCyclesFor, setShowRentCyclesFor] = useState<number | null>(null);
   const [payoutMethod, setPayoutMethod] = useState("تحويل بنكي");
   const [txId, setTxId] = useState("");
   const [payoutDocName, setPayoutDocName] = useState("");
@@ -63,6 +63,50 @@ export default function ClientProfilePage() {
       }
     }
   }, [startDate, endDate]);
+
+  const handleArchiveProperty = (propId: number) => {
+    const updatedProps = properties.map(p => {
+      if (p.id === propId) {
+        return { ...p, status: "منتهي / مسودة" };
+      }
+      return p;
+    });
+    setProperties(updatedProps);
+    setConfirmAction(null);
+  };
+
+  const handleIncreaseRent = (propId: number) => {
+    const prop = properties.find(p => p.id === propId);
+    if (!prop || !increaseRentAmount || !increaseRentDate) return;
+
+    const newAmount = Number(increaseRentAmount);
+    if (isNaN(newAmount) || newAmount <= 0) return;
+
+    let cycles = prop.rentCycles ? [...prop.rentCycles] : [];
+    
+    // Update all cycles that are due on or after the selected date
+    const incDate = new Date(increaseRentDate);
+    cycles = cycles.map(c => {
+      if (new Date(c.dueDate) >= incDate) {
+        return { ...c, amount: newAmount };
+      }
+      return c;
+    });
+
+    const newRevenue = cycles.reduce((acc, c) => acc + c.amount, 0);
+
+    const updatedProps = properties.map(p => {
+      if (p.id === propId) {
+        return { ...p, rentCycles: cycles, rentAmount: newAmount, revenue: newRevenue };
+      }
+      return p;
+    });
+
+    setProperties(updatedProps);
+    setIncreaseRentPropId(null);
+    setIncreaseRentAmount("");
+    setIncreaseRentDate("");
+  };
 
   const handleExtendContract = (propId: number) => {
     const prop = properties.find(p => p.id === propId);
@@ -401,7 +445,6 @@ export default function ClientProfilePage() {
       setTxId("");
       setPayoutMethod("تحويل بنكي");
       setPayoutDocName("");
-      setShowPayoutFor(null);
     }
   };
 
@@ -686,24 +729,25 @@ export default function ClientProfilePage() {
 
       <div className="mt-6 bg-transparent lg:bg-white lg:rounded-3xl lg:shadow-sm lg:border lg:border-slate-200">
         <div className="flex flex-col gap-4 lg:gap-0 lg:px-6">
-        {clientProperties.map((prop) => {
+                {clientProperties.map((prop) => {
           const rentDaysLeft = calculateDays(prop.nextRentDate || "");
           const contractDaysLeft = calculateDays(prop.endDate || "");
           const isRentLate = rentDaysLeft !== null && rentDaysLeft < 0;
 
+          const totalExpected = prop.revenue || 0;
+          const totalCollected = (prop.rentCycles || []).reduce((acc, curr) => curr.receivedFromTenant ? acc + curr.amount : acc, 0);
+          const totalExpenses = (prop.expenses || []).reduce((acc, curr) => acc + curr.amount, 0);
+          const remaining = Math.max(0, totalExpected - totalCollected);
+          const percent = totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0;
+          const isExpanded = expandedPropId === prop.id;
+
           return (
-          <div key={prop.id} className="bg-white rounded-3xl shadow-sm border border-slate-200 p-4 lg:p-0 lg:bg-transparent lg:rounded-none lg:shadow-none lg:border-0 lg:border-b lg:border-slate-200 lg:last:border-0 flex flex-col justify-between group transition-colors antialiased hover:bg-slate-50/50">
+          <div key={prop.id} className={`bg-white rounded-3xl shadow-sm border border-slate-200 p-4 lg:p-0 lg:bg-transparent lg:rounded-none lg:shadow-none lg:border-0 lg:border-b lg:border-slate-200 lg:last:border-0 flex flex-col justify-between group transition-colors antialiased ${isExpanded ? '' : 'hover:bg-slate-50/50'}`}>
+            
             <div 
-              className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 py-2 lg:py-3 cursor-pointer"
-              onClick={() => {
-                if (showRentCyclesFor === prop.id || showIssuesFor === prop.id || showExpensesFor === prop.id || showPayoutFor === prop.id) {
-                  setShowRentCyclesFor(null); setShowIssuesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);
-                } else {
-                  setShowRentCyclesFor(prop.id);
-                }
-              }}
+              className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 py-2 lg:py-3 cursor-pointer ${isExpanded ? 'lg:bg-slate-50 lg:px-4 lg:-mx-4 lg:rounded-t-2xl lg:mt-2' : ''}`}
+              onClick={() => setExpandedPropId(isExpanded ? null : prop.id)}
             >
-               {/* Info Col */}
                <div className="flex items-center gap-3 w-full lg:w-1/4">
                  <div className="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-100 shrink-0">
                    <Building className="w-5 h-5" />
@@ -714,29 +758,29 @@ export default function ClientProfilePage() {
                  </div>
                </div>
 
-               {/* Stats Grid */}
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full lg:flex-1 bg-slate-50 lg:bg-transparent p-3 lg:p-0 rounded-2xl lg:rounded-none border border-slate-100 lg:border-0">
+               <div className={`grid grid-cols-2 md:grid-cols-4 gap-3 w-full lg:flex-1 bg-slate-50 lg:bg-transparent p-3 lg:p-0 rounded-2xl lg:rounded-none border border-slate-100 lg:border-0 ${isExpanded ? 'hidden lg:grid' : ''}`}>
                  <div>
                    <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">المستأجر</p>
                    <p className="text-sm font-bold text-slate-800 truncate">{prop.tenant}</p>
                  </div>
                  <div>
-                   <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الإيجار الشهري</p>
-                   <p className="text-sm font-black text-indigo-700">د.أ {prop.rentAmount?.toLocaleString() || prop.revenue?.toLocaleString()}</p>
-                 </div>
-                 <div>
-                    <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الاستحقاق القادم</p>
+                   <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الاستحقاق القادم</p>
                     <p className={`text-sm font-bold ${isRentLate ? 'text-rose-600' : 'text-slate-800'}`}>
                       {prop.nextRentDate || "غير محدد"}
                       {isRentLate && <span className="ml-1.5 text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-md">متأخر</span>}
                     </p>
                  </div>
-                 <div className="flex items-center">
+                 <div>
+                   <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">قيمة الدفعة</p>
+                   <p className="text-sm font-black text-indigo-700">د.أ {prop.rentAmount?.toLocaleString() || prop.revenue?.toLocaleString()}</p>
+                 </div>
+                 <div className="flex items-center justify-between">
                     <div className="w-full">
                       <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider block lg:hidden">الحالة</p>
                       <span className={`px-2 py-1 text-xs font-extrabold rounded-lg shadow-sm border whitespace-nowrap ${
                         prop.status === 'نشط' || prop.status === 'Active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                         prop.status === 'متأخر' || prop.status === 'Delayed' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                        prop.status.includes('مسودة') || prop.status.includes('منتهي') ? 'bg-slate-100 text-slate-600 border-slate-200' :
                         prop.status === 'محجوز' ? 'bg-slate-800 text-white border-slate-900' :
                         'bg-rose-50 text-rose-800 border-rose-200'
                       }`}>
@@ -746,238 +790,282 @@ export default function ClientProfilePage() {
                  </div>
                </div>
 
-               {/* Actions Array */}
-               <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar w-full lg:w-auto pt-2 lg:pt-0 justify-start lg:justify-end" onClick={e => e.stopPropagation()}>
-                  {prop.documents && prop.documents.length > 0 && (
-                    <button onClick={() => handleDownload(prop.documents![0].name)} className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100" title="تحميل المستندات">
-                      <FileText className="w-4 h-4" />
-                    </button>
-                  )}
-                  <button onClick={() => {setShowRentCyclesFor(showRentCyclesFor === prop.id ? null : prop.id); setShowIssuesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showRentCyclesFor === prop.id ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-indigo-100'}`} title="جدول الدفعات">
-                    <CalendarIcon className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showIssuesFor === prop.id ? 'bg-amber-600 text-white border-amber-700 shadow-md' : 'text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-100'}`} title="قضايا ومشاكل">
-                    <AlertTriangle className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowIssuesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200'}`} title="المصروفات">
-                    <Receipt className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowIssuesFor(null);}} className={`p-2 rounded-lg transition-colors border ${showPayoutFor === prop.id ? 'bg-emerald-600 text-white border-emerald-700 shadow-md' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100'}`} title="تحويل للمالك">
-                    {prop.payoutStatus === 'Paid to Landlord' ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-                  </button>
-
-                  <div className="hidden lg:block w-px h-6 bg-slate-200 mx-1"></div>
-
-                  <button onClick={() => setConfirmAction({ type: 'duplicateProperty', payload: prop })} className="p-2 text-slate-400 hover:text-blue-600 bg-white hover:bg-blue-50 rounded-lg transition-colors border border-slate-200 shadow-sm" title="نسخ العقار">
-                    <Copy className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => openEdit(prop)} className="p-2 text-slate-400 hover:text-slate-900 bg-white hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 shadow-sm" title="تعديل">
-                    <Edit2 className="w-4 h-4" />
+               <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar w-full lg:w-auto pt-2 lg:pt-0 justify-end" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => setExpandedPropId(isExpanded ? null : prop.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all font-bold text-sm border ${isExpanded ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'}`}>
+                    {isExpanded ? 'طي اللوحة' : 'إدارة العقار'}
                   </button>
                </div>
             </div>
 
-              {showRentCyclesFor === prop.id && (() => {
-                const totalExpected = prop.revenue || 0;
-                const totalCollected = (prop.rentCycles || []).reduce((acc: number, curr: any) => curr.receivedFromTenant ? acc + curr.amount : acc, 0);
-                const remaining = Math.max(0, totalExpected - totalCollected);
-                const percent = totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0;
-                
-                return (
-                <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
-                  <div className="flex flex-wrap items-center justify-between mb-4 gap-4">
-                    <h4 className="text-sm font-extrabold text-indigo-800 flex items-center gap-2"><CalendarIcon className="w-5 h-5 text-indigo-600" /> جدول دفعات الإيجار والتمديد</h4>
-                    <button onClick={() => setExtendingPropId(extendingPropId === prop.id ? null : prop.id)} className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-200 hover:bg-indigo-100 transition-colors shadow-sm">
-                      + تمديد العقد
-                    </button>
+            {isExpanded && (
+               <div className="w-full lg:-mx-4 lg:w-[calc(100%+2rem)] bg-slate-50 border-t border-b border-slate-200 p-4 lg:p-6 shadow-inner relative animate-in slide-in-from-top-2 duration-300 rounded-b-3xl lg:rounded-b-2xl mb-4">
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-500 mb-1">إجمالي قيمة العقد</p>
+                        <p className="text-lg font-black text-slate-900">د.أ {totalExpected.toLocaleString()}</p>
+                     </div>
+                     <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 shadow-sm">
+                        <p className="text-xs font-bold text-emerald-700 mb-1">تم تحصيله</p>
+                        <p className="text-lg font-black text-emerald-600">د.أ {totalCollected.toLocaleString()}</p>
+                     </div>
+                     <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 shadow-sm">
+                        <p className="text-xs font-bold text-amber-700 mb-1">إجمالي المصروفات</p>
+                        <p className="text-lg font-black text-amber-600">د.أ {totalExpenses.toLocaleString()}</p>
+                     </div>
+                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-500 mb-1">المتبقي للتحصيل</p>
+                        <p className="text-lg font-black text-rose-600">د.أ {remaining.toLocaleString()}</p>
+                     </div>
                   </div>
 
-                  {/* Summary Bar */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
-                    <div className="flex justify-between items-end mb-2">
-                      <div>
-                        <p className="text-sm font-bold text-slate-500 mb-1">إجمالي قيمة العقد (المتوقع)</p>
-                        <p className="text-lg font-black text-slate-900">د.أ {totalExpected.toLocaleString()}</p>
-                      </div>
-                      <div className="text-left">
-                        <p className="text-sm font-bold text-slate-500 mb-1">المتبقي للتحصيل</p>
-                        <p className="text-lg font-black text-rose-600">د.أ {remaining.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
-                      <div className="bg-emerald-500 h-2.5 rounded-full" style={{ width: `${percent}%` }}></div>
-                    </div>
-                    <div className="flex justify-between mt-2 text-xs font-bold text-slate-400">
-                      <span>تم التحصيل: د.أ {totalCollected.toLocaleString()} ({percent}%)</span>
-                      <span>100%</span>
-                    </div>
+                  <div className="flex flex-wrap gap-2 mb-6 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+                     <button onClick={() => openEdit(prop)} className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors">
+                        <Edit2 className="w-4 h-4" /> تعديل البيانات
+                     </button>
+                     <button onClick={() => setExtendingPropId(extendingPropId === prop.id ? null : prop.id)} className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors">
+                        <CalendarIcon className="w-4 h-4" /> تمديد العقد
+                     </button>
+                     <button onClick={() => setIncreaseRentPropId(increaseRentPropId === prop.id ? null : prop.id)} className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors">
+                        <TrendingUp className="w-4 h-4" /> زيادة الإيجار
+                     </button>
+                     
+                     <div className="w-px h-6 bg-slate-200 mx-1 my-auto hidden md:block"></div>
+                     
+                     <button onClick={() => handleArchiveProperty(prop.id)} className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">
+                        <Archive className="w-4 h-4" /> أرشفة مسودة
+                     </button>
+                     <button onClick={() => setConfirmAction({type: 'duplicateProperty', payload: prop})} className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">
+                        <Copy className="w-4 h-4" /> نسخ
+                     </button>
+                     <button onClick={() => setConfirmAction({type: 'deleteProperty', payload: prop})} className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-rose-700 hover:text-white hover:bg-rose-600 rounded-xl transition-colors">
+                        <Trash2 className="w-4 h-4" /> حذف
+                     </button>
+                     
+                     {prop.documents && prop.documents.length > 0 && (
+                        <button onClick={() => handleDownload(prop.documents![0].name)} className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors md:ml-auto">
+                          <FileText className="w-4 h-4" /> المستندات
+                        </button>
+                     )}
                   </div>
 
                   {extendingPropId === prop.id && (
-                    <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200 mb-4 animate-in fade-in">
+                    <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200 mb-6 animate-in fade-in">
                       <p className="text-sm font-bold text-indigo-800 mb-2">أدخل مدة التمديد (بالأشهر):</p>
                       <div className="flex gap-2">
-                        <input type="number" min="1" value={extendMonths} onChange={(e) => setExtendMonths(Number(e.target.value))} className="px-3 py-2 border border-indigo-200 rounded-lg text-sm w-24 outline-none focus:ring-2 focus:ring-indigo-600 font-bold bg-white" />
-                        <button onClick={() => handleExtendContract(prop.id)} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-700 transition-colors">تأكيد التمديد</button>
+                        <input type="number" min="1" value={extendMonths} onChange={e => setExtendMonths(Number(e.target.value))} className="w-24 px-3 py-2 border border-indigo-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-indigo-600" />
+                        <button onClick={() => handleExtendContract(prop.id)} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-700 transition-colors">تنفيذ التمديد</button>
                       </div>
                     </div>
                   )}
 
-                  <div className="overflow-x-auto custom-scrollbar">
-                    <table className="w-full text-right border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50">
-                          <th className="py-2 px-3 text-xs font-black text-slate-500 border-b border-slate-200 rounded-tr-lg">تاريخ الاستحقاق</th>
-                          <th className="py-2 px-3 text-xs font-black text-slate-500 border-b border-slate-200">المبلغ</th>
-                          <th className="py-2 px-3 text-xs font-black text-slate-500 border-b border-slate-200">استلام من المستأجر</th>
-                          <th className="py-2 px-3 text-xs font-black text-slate-500 border-b border-slate-200 rounded-tl-lg">تحويل للمالك</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {(prop.rentCycles || []).length === 0 ? (
-                           <tr><td colSpan={4} className="text-sm text-slate-500 font-semibold italic py-4">لم يتم توليد جدول دفعات.</td></tr>
+                  {increaseRentPropId === prop.id && (
+                    <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200 mb-6 animate-in fade-in">
+                      <p className="text-sm font-bold text-emerald-800 mb-2">زيادة قيمة الإيجار:</p>
+                      <div className="flex flex-wrap gap-2">
+                        <div className="flex-1 min-w-[200px]">
+                           <label className="text-xs font-bold text-emerald-700 mb-1 block">القيمة الجديدة للدفعة (د.أ)</label>
+                           <input type="number" min="1" value={increaseRentAmount} onChange={e => setIncreaseRentAmount(e.target.value)} placeholder="مثال: 450" className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-600 placeholder-slate-400" />
+                        </div>
+                        <div className="flex-1 min-w-[200px]">
+                           <label className="text-xs font-bold text-emerald-700 mb-1 block">تطبق على الدفعات ابتداءً من تاريخ</label>
+                           <input type="date" value={increaseRentDate} onChange={e => setIncreaseRentDate(e.target.value)} className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-600" />
+                        </div>
+                        <div className="w-full mt-2">
+                          <button onClick={() => handleIncreaseRent(prop.id)} className="bg-emerald-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-emerald-700 transition-colors">حفظ التغيير</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                     
+                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                        <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
+                           <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2"><CalendarIcon className="w-4 h-4 text-indigo-600" /> جدول الدفعات والتحصيلات</h4>
+                        </div>
+                        <div className="p-0 overflow-x-auto max-h-96 custom-scrollbar">
+                          <table className="w-full text-right border-collapse">
+                            <thead className="sticky top-0 bg-slate-50">
+                              <tr className="text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                                <th className="py-3 px-4 font-extrabold">المبلغ</th>
+                                <th className="py-3 px-4 font-extrabold">الاستحقاق</th>
+                                <th className="py-3 px-4 font-extrabold">التحصيل</th>
+                                <th className="py-3 px-4 font-extrabold">للمالك</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {prop.rentCycles?.map(cycle => {
+                                const isCycleLate = calculateDays(cycle.dueDate) !== null && calculateDays(cycle.dueDate)! < 0 && !cycle.receivedFromTenant;
+                                return (
+                                <tr key={cycle.id} className={`border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors ${isCycleLate ? 'bg-rose-50/30' : ''}`}>
+                                  <td className="py-3 px-4 text-sm font-bold text-slate-900">د.أ {cycle.amount}</td>
+                                  <td className="py-3 px-4 text-sm font-bold text-slate-600">
+                                    <div className="flex items-center gap-2">
+                                      {cycle.dueDate}
+                                      {isCycleLate && <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-md font-extrabold">متأخر</span>}
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4 text-sm font-bold">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                      <input type="checkbox" checked={cycle.receivedFromTenant} onChange={(e) => {
+                                        const updated = properties.map(p => {
+                                          if (p.id === prop.id) {
+                                            const newCycles = p.rentCycles?.map(c => c.id === cycle.id ? {...c, receivedFromTenant: e.target.checked} : c) || [];
+                                            const firstUnpaid = newCycles.find(c => !c.receivedFromTenant);
+                                            const nextDate = firstUnpaid ? firstUnpaid.dueDate : p.endDate;
+                                            
+                                            let newStatus = p.status;
+                                            if (nextDate && new Date(nextDate) < new Date() && newStatus === 'نشط') {
+                                               newStatus = 'متأخر';
+                                            } else if (nextDate && new Date(nextDate) >= new Date() && newStatus === 'متأخر') {
+                                               newStatus = 'نشط';
+                                            }
+                                            
+                                            return {...p, rentCycles: newCycles, nextRentDate: nextDate, status: newStatus};
+                                          }
+                                          return p;
+                                        });
+                                        setProperties(updated);
+                                      }} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600" />
+                                      <span className={`text-xs ${cycle.receivedFromTenant ? 'text-emerald-600 font-extrabold' : 'text-slate-400'}`}>تم التحصيل</span>
+                                    </label>
+                                  </td>
+                                  <td className="py-3 px-4 text-sm font-bold">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                      <input type="checkbox" checked={cycle.paidToLandlord} onChange={(e) => {
+                                        const updated = properties.map(p => {
+                                          if (p.id === prop.id) {
+                                            const newCycles = p.rentCycles?.map(c => c.id === cycle.id ? {...c, paidToLandlord: e.target.checked} : c) || [];
+                                            return {...p, rentCycles: newCycles};
+                                          }
+                                          return p;
+                                        });
+                                        setProperties(updated);
+                                      }} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600" disabled={!cycle.receivedFromTenant} />
+                                      <span className={`text-xs ${cycle.paidToLandlord ? 'text-blue-600 font-extrabold' : 'text-slate-400'}`}>محول</span>
+                                    </label>
+                                  </td>
+                                </tr>
+                              )})}
+                            </tbody>
+                          </table>
+                        </div>
+                     </div>
+
+                     <div className="flex flex-col gap-6">
+                        
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                           <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
+                              <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2"><Receipt className="w-4 h-4 text-slate-700" /> المصروفات والخصومات</h4>
+                           </div>
+                           <div className="p-4">
+                             <div className="space-y-3 max-h-48 overflow-y-auto custom-scrollbar mb-4">
+                                {(prop.expenses || []).length === 0 ? (
+                                   <p className="text-sm text-slate-500 font-semibold italic">لا توجد مصروفات مسجلة.</p>
+                                ) : (
+                                  prop.expenses?.map(exp => (
+                                    <div key={exp.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                      <div>
+                                        <p className="text-sm font-bold text-slate-800">{exp.description}</p>
+                                        <p className="text-xs font-semibold text-slate-400 mt-1">{exp.date}</p>
+                                      </div>
+                                      <p className="text-sm font-black text-rose-600">د.أ {exp.amount}</p>
+                                    </div>
+                                  ))
+                                )}
+                             </div>
+                             <form onSubmit={(e) => handleAddExpense(e, prop.id)} className="flex flex-col gap-2 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                               <input type="text" value={newExpenseDesc} onChange={(e) => setNewExpenseDesc(e.target.value)} placeholder="وصف المصروف..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-slate-900" required />
+                               <div className="flex gap-2">
+                                 <input type="number" value={newExpenseAmt} onChange={(e) => setNewExpenseAmt(e.target.value)} placeholder="المبلغ (د.أ)" className="w-2/3 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-slate-900" required />
+                                 <button type="submit" className="w-1/3 bg-slate-900 text-white rounded-lg text-sm font-bold hover:bg-slate-800 transition-colors">إضافة</button>
+                               </div>
+                             </form>
+                           </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                           <div className="bg-amber-50 border-b border-amber-100 p-4 flex justify-between items-center">
+                              <h4 className="text-sm font-extrabold text-amber-900 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-700" /> القضايا القانونية</h4>
+                           </div>
+                           <div className="p-4">
+                             <div className="space-y-3 max-h-48 overflow-y-auto custom-scrollbar mb-4">
+                                {(prop.issues || []).length === 0 ? (
+                                   <p className="text-sm text-slate-500 font-semibold italic">لا توجد قضايا أو مشاكل مسجلة.</p>
+                                ) : (
+                                  prop.issues?.map(issue => (
+                                    <div key={issue.id} className="flex justify-between items-center bg-amber-50 p-3 rounded-xl border border-amber-100">
+                                      <div>
+                                        <p className="text-sm font-bold text-slate-800">{issue.description}</p>
+                                        <p className="text-xs font-semibold text-slate-400 mt-1">{issue.date}</p>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <span className={`px-2 py-1 text-[10px] font-extrabold rounded-md border ${issue.status === 'مفتوحة' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'}`}>{issue.status}</span>
+                                        {issue.status === 'مفتوحة' && (
+                                          <button onClick={() => {
+                                            setProperties(properties.map(p => p.id === prop.id ? {...p, issues: p.issues?.map(i => i.id === issue.id ? {...i, status: 'مغلقة'} : i)} : p));
+                                          }} className="px-2 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-bold hover:bg-slate-50 transition-colors">إغلاق</button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                             </div>
+                             <form onSubmit={(e) => handleAddIssue(e, prop.id)} className="flex gap-2 bg-amber-50/30 p-3 rounded-xl border border-amber-100">
+                               <input type="text" value={newIssueDesc} onChange={(e) => setNewIssueDesc(e.target.value)} placeholder="وصف القضية أو المشكلة..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-amber-600" required />
+                               <button type="submit" className="shrink-0 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-amber-700 transition-colors shadow-sm">إضافة القضية</button>
+                             </form>
+                           </div>
+                        </div>
+
+                     </div>
+                  </div>
+                  
+                  <div className="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                     <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
+                        <h4 className="text-sm font-extrabold text-blue-800 flex items-center gap-2"><Send className="w-4 h-4 text-blue-600" /> إثبات تحويل صافي الإيراد للمالك</h4>
+                     </div>
+                     <div className="p-4">
+                        {prop.payoutStatus === 'Paid to Landlord' ? (
+                          <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                            <p className="font-bold text-emerald-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5"/> تمت تصفية الحساب للمالك</p>
+                            <p className="text-sm text-emerald-700 mt-2 font-semibold">طريقة الدفع: {prop.payoutMethod}</p>
+                            {prop.payoutTransactionId && <p className="text-sm text-emerald-700 mt-1 font-semibold">رقم الحوالة/الإيصال: {prop.payoutTransactionId}</p>}
+                            {prop.payoutDocument && <p className="text-sm text-emerald-700 mt-1 font-semibold">المستند: {prop.payoutDocument}</p>}
+                          </div>
                         ) : (
-                          prop.rentCycles?.map(cycle => (
-                            <tr key={cycle.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="py-3 px-3 text-sm font-bold text-slate-800">{cycle.dueDate}</td>
-                              <td className="py-3 px-3 text-sm font-bold text-indigo-700">د.أ {cycle.amount}</td>
-                              <td className="py-3 px-3 text-sm font-bold">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                  <input type="checkbox" checked={cycle.receivedFromTenant} onChange={(e) => {
-                                    const updated = properties.map(p => {
-                                      if (p.id === prop.id) {
-                                        const newCycles = p.rentCycles?.map(c => c.id === cycle.id ? {...c, receivedFromTenant: e.target.checked} : c) || [];
-                                        const firstUnpaid = newCycles.find(c => !c.receivedFromTenant);
-                                        const nextDate = firstUnpaid ? firstUnpaid.dueDate : p.endDate;
-                                        
-                                        let newStatus = p.status;
-                                        if (nextDate && new Date(nextDate) < new Date() && newStatus === 'نشط') {
-                                           newStatus = 'متأخر';
-                                        } else if (nextDate && new Date(nextDate) >= new Date() && newStatus === 'متأخر') {
-                                           newStatus = 'نشط';
-                                        }
-                                        
-                                        return {...p, rentCycles: newCycles, nextRentDate: nextDate, status: newStatus};
-                                      }
-                                      return p;
-                                    });
-                                    setProperties(updated);
-                                  }} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600" />
-                                  <span className={cycle.receivedFromTenant ? "text-emerald-600" : "text-slate-500"}>
-                                    {cycle.receivedFromTenant ? "تم الاستلام" : "قيد الانتظار"}
-                                  </span>
-                                </label>
-                              </td>
-                              <td className="py-3 px-3 text-sm font-bold">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                  <input type="checkbox" checked={cycle.paidToLandlord} onChange={(e) => {
-                                    const updated = properties.map(p => p.id === prop.id ? {...p, rentCycles: p.rentCycles?.map(c => c.id === cycle.id ? {...c, paidToLandlord: e.target.checked} : c)} : p);
-                                    setProperties(updated);
-                                  }} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600" />
-                                  <span className={cycle.paidToLandlord ? "text-emerald-600" : "text-slate-500"}>
-                                    {cycle.paidToLandlord ? "تم التحويل" : "معلق"}
-                                  </span>
-                                </label>
-                              </td>
-                            </tr>
-                          ))
+                          <form onSubmit={(e) => handlePayoutSubmit(e, prop.id)} className="space-y-4 bg-blue-50/50 p-5 rounded-xl border border-blue-100 max-w-2xl">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1.5">طريقة التوريد</label>
+                              <select value={payoutMethod} onChange={(e) => setPayoutMethod(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm">
+                                <option>تحويل بنكي</option>
+                                <option>نقدي</option>
+                              </select>
+                            </div>
+                            {payoutMethod === "تحويل بنكي" && (
+                              <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5">رقم الحوالة البنكية</label>
+                                <input type="text" placeholder="مثال: TXN-982374" value={txId} onChange={(e) => setTxId(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm" required />
+                              </div>
+                            )}
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1.5">إرفاق إيصال / مخالصة (اختياري)</label>
+                              <input type="file" onChange={(e) => setPayoutDocName(e.target.files?.[0]?.name || "")} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer" />
+                            </div>
+                            <button type="submit" className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 text-sm shadow-sm transition-colors">
+                              تأكيد تحويل الصافي للمالك
+                            </button>
+                          </form>
                         )}
-                      </tbody>
-                    </table>
+                     </div>
                   </div>
-                </div>
-                );
-              })()}
 
-              {showIssuesFor === prop.id && (
-                <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
-                  <h4 className="text-sm font-extrabold text-amber-800 mb-4 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-600" /> القضايا والمشاكل القانونية</h4>
-                  <div className="space-y-3 mb-5 max-h-48 overflow-y-auto custom-scrollbar">
-                    {(prop.issues || []).length === 0 ? (
-                       <p className="text-sm text-slate-500 font-semibold italic">لا توجد قضايا أو مشاكل مسجلة.</p>
-                    ) : (
-                      prop.issues?.map(issue => (
-                        <div key={issue.id} className="flex justify-between items-center bg-amber-50 p-3 rounded-xl border border-amber-200">
-                          <div>
-                            <p className="text-sm font-bold text-slate-800">{issue.description}</p>
-                            <p className="text-xs font-semibold text-slate-500 mt-0.5">{issue.date}</p>
-                          </div>
-                          <span className="font-extrabold text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-md">{issue.status}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <form onSubmit={(e) => handleAddIssue(e, prop.id)} className="flex gap-3">
-                    <input type="text" placeholder="اكتب وصف المشكلة أو القضية (مثال: تأخر المستأجر 3 أشهر)..." value={newIssueDesc} onChange={(e) => setNewIssueDesc(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-slate-900 outline-none" required />
-                    <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 text-sm shadow-sm whitespace-nowrap">حفظ الملاحظة</button>
-                  </form>
-                </div>
-              )}
-
-              {showExpensesFor === prop.id && (
-                <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
-                  <h4 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><Receipt className="w-4 h-4 text-slate-500" /> مصروفات العقار المخصومة</h4>
-                  <div className="space-y-3 mb-5 max-h-48 overflow-y-auto custom-scrollbar">
-                    {(prop.expenses || []).length === 0 ? (
-                       <p className="text-sm text-slate-500 font-semibold italic">لا توجد مصروفات مسجلة.</p>
-                    ) : (
-                      prop.expenses?.map(exp => (
-                        <div key={exp.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
-                          <div>
-                            <p className="text-sm font-bold text-slate-800">{exp.description}</p>
-                            <p className="text-xs font-semibold text-slate-500 mt-0.5">{exp.date}</p>
-                          </div>
-                          <span className="font-extrabold text-rose-600">د.أ {exp.amount}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <form onSubmit={(e) => handleAddExpense(e, prop.id)} className="flex flex-wrap gap-3">
-                    <input type="text" placeholder="وصف المصروف (مثال: صيانة سباكة)..." value={newExpenseDesc} onChange={(e) => setNewExpenseDesc(e.target.value)} className="flex-1 min-w-[200px] px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-slate-900 outline-none" required />
-                    <input type="number" placeholder="المبلغ د.أ " value={newExpenseAmt} onChange={(e) => setNewExpenseAmt(e.target.value)} className="w-24 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-slate-900 outline-none" required />
-                    <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 text-sm shadow-sm whitespace-nowrap">إضافة</button>
-                  </form>
-                </div>
-              )}
-
-              {showPayoutFor === prop.id && (
-                <div className="border-t border-slate-200 pt-4 animate-in slide-in-from-top-2 duration-300">
-                  <h4 className="text-sm font-extrabold text-blue-800 mb-4 flex items-center gap-2"><Send className="w-4 h-4 text-blue-600" /> إثبات تحويل للمالك</h4>
-                  {prop.payoutStatus === 'Paid to Landlord' ? (
-                    <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
-                      <p className="font-bold text-emerald-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5"/> تمت تصفية الحساب للمالك</p>
-                      <p className="text-sm text-emerald-700 mt-2 font-semibold">طريقة الدفع: {prop.payoutMethod}</p>
-                      {prop.payoutTransactionId && <p className="text-sm text-emerald-700 mt-1 font-semibold">رقم الحوالة/الإيصال: {prop.payoutTransactionId}</p>}
-                      {prop.payoutDocument && <p className="text-sm text-emerald-700 mt-1 font-semibold">المستند: {prop.payoutDocument}</p>}
-                    </div>
-                  ) : (
-                    <form onSubmit={(e) => handlePayoutSubmit(e, prop.id)} className="space-y-4 bg-blue-50/50 p-5 rounded-xl border border-blue-100">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1.5">طريقة التوريد</label>
-                        <select value={payoutMethod} onChange={(e) => setPayoutMethod(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm">
-                          <option>تحويل بنكي</option>
-                          <option>نقدي</option>
-                        </select>
-                      </div>
-                      {payoutMethod === "تحويل بنكي" && (
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1.5">رقم الحوالة البنكية</label>
-                          <input type="text" placeholder="مثال: TXN-982374" value={txId} onChange={(e) => setTxId(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm" required />
-                        </div>
-                      )}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1.5">إرفاق إيصال / مخالصة (اختياري)</label>
-                        <input type="file" onChange={(e) => setPayoutDocName(e.target.files?.[0]?.name || "")} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer" />
-                      </div>
-                      <button type="submit" className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 text-sm shadow-sm transition-colors">
-                        تأكيد تحويل الصافي للمالك
-                      </button>
-                    </form>
-                  )}
-                </div>
-              )}
+               </div>
+            )}
           </div>
-        )})}
+          )})}
+
         {clientProperties.length === 0 && !isAdding && (
           <div className="col-span-full py-20 bg-slate-50 border-2 border-dashed border-slate-300 rounded-3xl flex flex-col items-center justify-center text-slate-500">
             <Building className="w-12 h-12 text-slate-400 mb-4" />
