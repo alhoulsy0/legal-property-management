@@ -11,7 +11,7 @@ function CasesPageContent() {
   const tabParam = searchParams.get("tab");
 
   const { 
-    clients, 
+    clients, setClients,
     cases, setCases, 
     wakalas, setWakalas, 
     hearings, setHearings, 
@@ -68,36 +68,69 @@ function CasesPageContent() {
   
   const [wizardError, setWizardError] = useState("");
 
-  // Auto-fill client details based on chosen Client & ClientRole
-  useEffect(() => {
-    if (!wClientId) return;
-    const selectedClient = clients.find(cl => cl.id === Number(wClientId));
-    if (!selectedClient) return;
-
-    if (wClientRole === "المدعي") {
-      // Auto-fill Plaintiff with client info
-      setWPlaintiffName(selectedClient.name);
-      setWPlaintiffId(selectedClient.nationalId || "");
-      setWPlaintiffPhone(selectedClient.phone || "");
-      
-      // Clear defendant values so they can enter opponent
-      setWDefendantName("");
-      setWDefendantId("");
-      setWDefendantPhone("");
-      setWDefendantAddress("");
-    } else {
-      // Auto-fill Defendant with client info
-      setWDefendantName(selectedClient.name);
-      setWDefendantId(selectedClient.nationalId || "");
-      setWDefendantPhone(selectedClient.phone || "");
-
-      // Clear plaintiff values so they can enter opponent
+  // Handle client selection with pre-filling once (no loops)
+  const handleClientChange = (clientIdVal: string) => {
+    setWClientId(clientIdVal);
+    if (clientIdVal === "new" || !clientIdVal) {
       setWPlaintiffName("");
       setWPlaintiffId("");
       setWPlaintiffPhone("");
       setWPlaintiffAddress("");
+      setWDefendantName("");
+      setWDefendantId("");
+      setWDefendantPhone("");
+      setWDefendantAddress("");
+      return;
     }
-  }, [wClientId, wClientRole, clients]);
+
+    const selectedClient = clients.find(cl => cl.id === Number(clientIdVal));
+    if (selectedClient) {
+      if (wClientRole === "المدعي") {
+        setWPlaintiffName(selectedClient.name);
+        setWPlaintiffId(selectedClient.nationalId || "");
+        setWPlaintiffPhone(selectedClient.phone || "");
+        setWDefendantName("");
+        setWDefendantId("");
+        setWDefendantPhone("");
+        setWDefendantAddress("");
+      } else {
+        setWDefendantName(selectedClient.name);
+        setWDefendantId(selectedClient.nationalId || "");
+        setWDefendantPhone(selectedClient.phone || "");
+        setWPlaintiffName("");
+        setWPlaintiffId("");
+        setWPlaintiffPhone("");
+        setWPlaintiffAddress("");
+      }
+    }
+  };
+
+  // Handle client role selection with pre-filling once (no loops)
+  const handleRoleChange = (roleVal: "المدعي" | "المدعى عليه") => {
+    setWClientRole(roleVal);
+    if (wClientId === "new" || !wClientId) return;
+
+    const selectedClient = clients.find(cl => cl.id === Number(wClientId));
+    if (selectedClient) {
+      if (roleVal === "المدعي") {
+        setWPlaintiffName(selectedClient.name);
+        setWPlaintiffId(selectedClient.nationalId || "");
+        setWPlaintiffPhone(selectedClient.phone || "");
+        setWDefendantName("");
+        setWDefendantId("");
+        setWDefendantPhone("");
+        setWDefendantAddress("");
+      } else {
+        setWDefendantName(selectedClient.name);
+        setWDefendantId(selectedClient.nationalId || "");
+        setWDefendantPhone(selectedClient.phone || "");
+        setWPlaintiffName("");
+        setWPlaintiffId("");
+        setWPlaintiffPhone("");
+        setWPlaintiffAddress("");
+      }
+    }
+  };
 
   // Form States - Wakala
   const [newWakalaNumber, setNewWakalaNumber] = useState("");
@@ -131,6 +164,7 @@ function CasesPageContent() {
     return matchesSearch && matchesCourt && matchesType && matchesStatus;
   });
 
+  // Sort cases based on next activity date
   const getNextActivityDate = (caseId: string) => {
     const caseHearings = hearings.filter(h => h.caseId === caseId);
     const now = Date.now();
@@ -190,7 +224,6 @@ function CasesPageContent() {
         return;
       }
       
-      // Enforce unique Case + Court + Year validation
       const duplicate = cases.some(
         c => c.caseNumber === wCaseNumber && c.year === Number(wCaseYear) && c.courtName === wCourtName
       );
@@ -208,9 +241,32 @@ function CasesPageContent() {
     e.preventDefault();
     setWizardError("");
 
+    let targetClientId = Number(wClientId);
+
+    // If client is a new manual input, create a client profile first
+    if (wClientId === "new") {
+      const newClientId = Date.now();
+      const newClientName = wClientRole === "المدعي" ? wPlaintiffName : wDefendantName;
+      const newClientPhone = wClientRole === "المدعي" ? wPlaintiffPhone : wDefendantPhone;
+      const newClientNationalId = wClientRole === "المدعي" ? wPlaintiffId : wDefendantId;
+
+      setClients([
+        ...clients, 
+        { 
+          id: newClientId, 
+          name: newClientName, 
+          phone: newClientPhone, 
+          properties: 0, 
+          status: "Active", 
+          nationalId: newClientNationalId 
+        }
+      ]);
+      targetClientId = newClientId;
+    }
+
     const newCaseObj: LegalCaseData = {
       id: `c-${Date.now()}`,
-      clientId: Number(wClientId),
+      clientId: targetClientId,
       caseNumber: wCaseNumber,
       year: Number(wCaseYear),
       courtName: wCourtName,
@@ -328,7 +384,7 @@ function CasesPageContent() {
               <div className="p-2 bg-slate-100 rounded-xl">
                 <Scale className="w-5 h-5 text-slate-700" />
               </div>
-              <h3 className="text-sm font-bold text-slate-600">إجمالي القضايا</h3>
+              <h3 className="text-sm font-bold text-slate-655">إجمالي القضايا</h3>
             </div>
             <p className="text-3xl font-extrabold text-slate-900">{totalCases}</p>
           </div>
@@ -512,7 +568,7 @@ function CasesPageContent() {
                     if (nextActTime !== Infinity) {
                       const dateStr = new Date(nextActTime).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
                       return (
-                        <div className="flex justify-between items-center bg-indigo-50 border border-indigo-100 p-2.5 rounded-xl text-xs font-bold text-indigo-950 mt-3">
+                        <div className="flex justify-between items-center bg-indigo-50 border border-indigo-100 p-2.5 rounded-xl text-xs font-bold text-indigo-955 mt-3">
                           <span className="text-indigo-650 flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5 text-indigo-700" />
                             <span>النشاط القادم:</span>
@@ -745,7 +801,7 @@ function CasesPageContent() {
               </div>
             )}
 
-            <form onSubmit={handleWizardSubmit} className="space-y-5 flex-1">
+            <form onSubmit={handleWizardSubmit} className="space-y-5 flex-1 text-slate-700">
               
               {/* STEP 1: Select Client & Role */}
               {wizardStep === 1 && (
@@ -754,7 +810,7 @@ function CasesPageContent() {
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">اختر الموكل المسجل في النظام</label>
                     <select 
                       value={wClientId} 
-                      onChange={e => setWClientId(e.target.value)} 
+                      onChange={e => handleClientChange(e.target.value)} 
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-bold text-slate-900 cursor-pointer"
                       required
                     >
@@ -762,6 +818,7 @@ function CasesPageContent() {
                       {clients.map(cl => (
                         <option key={cl.id} value={cl.id}>{cl.name} (الرقم الوطني: {cl.nationalId || "غير متوفر"})</option>
                       ))}
+                      <option value="new">-- إدخال يدوي (موكل جديد غير مسجل) --</option>
                     </select>
                   </div>
                   <div>
@@ -769,7 +826,7 @@ function CasesPageContent() {
                     <div className="grid grid-cols-2 gap-4">
                       <button
                         type="button"
-                        onClick={() => setWClientRole("المدعي")}
+                        onClick={() => handleRoleChange("المدعي")}
                         className={`py-3 px-4 rounded-xl border text-sm font-black transition-all ${
                           wClientRole === "المدعي" 
                             ? "bg-slate-900 text-white border-slate-900" 
@@ -780,7 +837,7 @@ function CasesPageContent() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setWClientRole("المدعى عليه")}
+                        onClick={() => handleRoleChange("المدعى عليه")}
                         className={`py-3 px-4 rounded-xl border text-sm font-black transition-all ${
                           wClientRole === "المدعى عليه" 
                             ? "bg-slate-900 text-white border-slate-900" 
@@ -801,13 +858,16 @@ function CasesPageContent() {
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
                     <h4 className="text-xs font-black text-slate-900 border-b pb-2 flex justify-between items-center">
                       <span>الجهة المدعية (المدعي)</span>
-                      {wClientRole === "المدعي" && <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">الموكل الخاص بنا (تعبئة تلقائية)</span>}
+                      {wClientId !== "new" && wClientId !== "" && wClientRole === "المدعي" && (
+                        <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">الموكل الخاص بنا</span>
+                      )}
                     </h4>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-700 mb-1">الاسم بالكامل</label>
                         <input 
                           type="text" 
+                          placeholder="الاسم الكامل للمدعي"
                           value={wPlaintiffName} 
                           onChange={e => setWPlaintiffName(e.target.value)} 
                           className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
@@ -830,6 +890,7 @@ function CasesPageContent() {
                         <label className="block text-[10px] font-bold text-slate-700 mb-1">رقم الهاتف</label>
                         <input 
                           type="text" 
+                          placeholder="هاتف المدعي"
                           value={wPlaintiffPhone} 
                           onChange={e => setWPlaintiffPhone(e.target.value)} 
                           className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
@@ -839,6 +900,7 @@ function CasesPageContent() {
                         <label className="block text-[10px] font-bold text-slate-700 mb-1">العنوان بالتفصيل</label>
                         <input 
                           type="text" 
+                          placeholder="عنوان المدعي بالتفصيل"
                           value={wPlaintiffAddress} 
                           onChange={e => setWPlaintiffAddress(e.target.value)} 
                           className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
@@ -851,13 +913,16 @@ function CasesPageContent() {
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
                     <h4 className="text-xs font-black text-slate-900 border-b pb-2 flex justify-between items-center">
                       <span>الجهة المدعى عليها (المدعى عليه)</span>
-                      {wClientRole === "المدعى عليه" && <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">الموكل الخاص بنا (تعبئة تلقائية)</span>}
+                      {wClientId !== "new" && wClientId !== "" && wClientRole === "المدعى عليه" && (
+                        <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">الموكل الخاص بنا</span>
+                      )}
                     </h4>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-700 mb-1">الاسم بالكامل / الخصم</label>
                         <input 
                           type="text" 
+                          placeholder="الاسم الكامل للمدعى عليه"
                           value={wDefendantName} 
                           onChange={e => setWDefendantName(e.target.value)} 
                           className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
@@ -880,6 +945,7 @@ function CasesPageContent() {
                         <label className="block text-[10px] font-bold text-slate-700 mb-1">رقم الهاتف للخصم</label>
                         <input 
                           type="text" 
+                          placeholder="هاتف المدعى عليه"
                           value={wDefendantPhone} 
                           onChange={e => setWDefendantPhone(e.target.value)} 
                           className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
@@ -889,6 +955,7 @@ function CasesPageContent() {
                         <label className="block text-[10px] font-bold text-slate-700 mb-1">العنوان للخصم بالتفصيل</label>
                         <input 
                           type="text" 
+                          placeholder="عنوان المدعى عليه بالتفصيل"
                           value={wDefendantAddress} 
                           onChange={e => setWDefendantAddress(e.target.value)} 
                           className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
@@ -989,7 +1056,9 @@ function CasesPageContent() {
                       </div>
                       <div>
                         <span className="text-slate-400 block text-xs">الموكل والصفة:</span>
-                        <span className="text-emerald-700 font-extrabold">{clients.find(c => c.id === Number(wClientId))?.name} ({wClientRole})</span>
+                        <span className="text-emerald-700 font-extrabold">
+                          {wClientId === "new" ? `${wClientRole === "المدعي" ? wPlaintiffName : wDefendantName} (موكل جديد)` : clients.find(c => c.id === Number(wClientId))?.name} ({wClientRole})
+                        </span>
                       </div>
                     </div>
 
