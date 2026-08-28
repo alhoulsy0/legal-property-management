@@ -606,7 +606,7 @@ export default function ClientProfilePage() {
               <div className="col-span-full">
                 <label className="block text-sm font-bold text-slate-800 mb-2">إرفاق مستندات (عقود، هويات، أحكام)</label>
                 <div className="relative w-full border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-blue-50 transition-colors cursor-pointer group">
-                  <input type="file" multiple onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                  <input type="file" multiple onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer placeholder-slate-500" />
                   <UploadCloud className="w-10 h-10 text-slate-400 group-hover:text-blue-600 mb-3 transition-colors" />
                   <p className="text-sm font-extrabold text-slate-700">انقر للرفع أو اسحب الملفات هنا</p>
                   <p className="text-xs font-semibold text-slate-500 mt-1">PDF, DOCX حد أقصى 10MB</p>

@@ -199,7 +199,7 @@ export default function DashboardPage() {
               {tasks.length === 0 && <p className="text-sm font-bold text-slate-500 italic p-2 text-center">لا توجد مهام معلقة!</p>}
               {tasks.map(task => (
                 <div key={task.id} className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-300 border border-transparent hover:border-slate-200 cursor-pointer د.أ {task.done ? 'bg-slate-100 opacity-50 scale-95' : 'bg-slate-50 hover:bg-slate-100'}`} onClick={() => toggleTask(task.id)}>
-                  <input type="checkbox" checked={task.done} readOnly className="w-5 h-5 rounded border-slate-300 text-blue-600 pointer-events-none" />
+                  <input type="checkbox" checked={task.done} readOnly className="w-5 h-5 rounded border-slate-300 text-blue-600 pointer-events-none placeholder-slate-500" />
                   <span className={`text-sm font-bold د.أ {task.done ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{task.text}</span>
                 </div>
               ))}
