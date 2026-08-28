@@ -202,6 +202,7 @@ export default function ClientProfilePage() {
   };
 
   const [showLedger, setShowLedger] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const totalRevenue = clientProperties.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
   const totalExpenses = clientProperties.reduce((acc, curr) => {
@@ -218,61 +219,13 @@ export default function ClientProfilePage() {
   });
 
   const exportPDF = () => {
-    const report = document.getElementById("ledger-report");
-    if (!report) return;
-    
-    // Create a clone to inject at the root level to avoid parent container constraints
-    const clone = report.cloneNode(true) as HTMLElement;
-    clone.id = "print-clone";
-    clone.className = "print-active-clone bg-white w-full text-slate-900";
-    
-    const style = document.createElement('style');
-    style.id = "print-style";
-    style.innerHTML = `
-      @media print {
-        body > *:not(.print-active-clone, #print-style) { display: none !important; }
-        body, html {
-           height: auto !important;
-           overflow: visible !important;
-           background: white !important;
-           -webkit-print-color-adjust: exact !important;
-           print-color-adjust: exact !important;
-           margin: 0 !important;
-           padding: 0 !important;
-        }
-        .print-active-clone {
-           display: block !important;
-           position: static !important;
-           width: 100% !important;
-           height: auto !important;
-           overflow: visible !important;
-           margin: 0 !important;
-           padding: 10mm !important; /* give it nice margins */
-        }
-        /* Ensure elements stack nicely and don't overlap */
-        * {
-           float: none !important;
-        }
-        /* Protect property blocks from cutting in half */
-        div[style*="page-break-inside: avoid"], div[style*="pageBreakInside: avoid"] {
-           page-break-inside: avoid !important;
-           break-inside: avoid !important;
-        }
-      }
-      /* Hide the clone when not printing just in case */
-      @media screen {
-        .print-active-clone { display: none !important; }
-      }
-    `;
-    
-    document.body.appendChild(style);
-    document.body.appendChild(clone);
-    
+    setIsPrinting(true);
     setTimeout(() => {
-      window.print();
-      document.body.removeChild(clone);
-      document.body.removeChild(style);
-    }, 100);
+       window.print();
+       setTimeout(() => {
+          setIsPrinting(false);
+       }, 500);
+    }, 500);
   };
   
   const activeCount = clientProperties.filter(p => p.status === 'Active' || p.status === 'نشط').length;
@@ -579,7 +532,7 @@ export default function ClientProfilePage() {
             </div>
             
             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
-                            <div id="ledger-report" className="bg-white p-8 rounded-2xl print:p-0 print:bg-transparent">
+                            <div id="ledger-report" className={isPrinting ? "bg-white w-full h-auto overflow-visible" : "bg-white p-8 rounded-2xl"}>
                 {/* Print Title */}
                 <div className="mb-8 border-b-2 border-slate-800 pb-4 flex justify-between items-end">
                   <div>
@@ -592,16 +545,16 @@ export default function ClientProfilePage() {
                 </div>
                 
                 {/* Overall Summary */}
-                <div className="grid grid-cols-3 gap-6 mb-10">
-                  <div className="p-6 bg-slate-50 border-2 border-slate-200 rounded-2xl text-center">
+                <div className={isPrinting ? "flex flex-row gap-6 mb-10 justify-between items-center w-full" : "grid grid-cols-3 gap-6 mb-10"}>
+                  <div className={isPrinting ? "p-4 bg-slate-50 border-2 border-slate-200 rounded-xl text-center flex-1" : "p-6 bg-slate-50 border-2 border-slate-200 rounded-2xl text-center"}>
                     <p className="text-sm font-black text-slate-700 uppercase tracking-wider mb-2">إجمالي قيمة العقود</p>
                     <p className="text-3xl font-black text-slate-900">د.أ {totalRevenue.toLocaleString()}</p>
                   </div>
-                  <div className="p-6 bg-rose-50 border-2 border-rose-200 rounded-2xl text-center">
+                  <div className={isPrinting ? "p-4 bg-rose-50 border-2 border-rose-200 rounded-xl text-center flex-1" : "p-6 bg-rose-50 border-2 border-rose-200 rounded-2xl text-center"}>
                     <p className="text-sm font-black text-rose-600 uppercase tracking-wider mb-2">إجمالي المصروفات</p>
                     <p className="text-3xl font-black text-rose-700">د.أ {totalExpenses.toLocaleString()}</p>
                   </div>
-                  <div className="p-6 bg-emerald-50 border-2 border-emerald-200 rounded-2xl text-center">
+                  <div className={isPrinting ? "p-4 bg-emerald-50 border-2 border-emerald-200 rounded-xl text-center flex-1" : "p-6 bg-emerald-50 border-2 border-emerald-200 rounded-2xl text-center"}>
                     <p className="text-sm font-black text-emerald-700 uppercase tracking-wider mb-2">صافي التحصيلات</p>
                     <p className="text-3xl font-black text-emerald-700">د.أ {netCashFlow.toLocaleString()}</p>
                   </div>
@@ -619,7 +572,7 @@ export default function ClientProfilePage() {
                       return (
                          <div key={prop.id} className="mb-12 border-2 border-slate-200 rounded-2xl p-6" style={{ pageBreakInside: 'avoid' }}>
                             {/* Property Header */}
-                            <div className="flex flex-col lg:flex-row justify-between items-start mb-6 pb-6 border-b border-slate-200 gap-6">
+                            <div className={isPrinting ? "flex flex-row justify-between items-start mb-6 pb-6 border-b border-slate-200 gap-6 w-full" : "flex flex-col lg:flex-row justify-between items-start mb-6 pb-6 border-b border-slate-200 gap-6"}>
                                <div>
                                   <h4 className="text-2xl font-black text-slate-900 mb-2">{prop.name}</h4>
                                   <p className="text-sm font-bold text-slate-600">{prop.type} • {prop.location}</p>
@@ -640,7 +593,7 @@ export default function ClientProfilePage() {
                                </div>
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div className={isPrinting ? "flex flex-col gap-8" : "grid grid-cols-1 lg:grid-cols-2 gap-8"}>
                                {/* Rent Cycles Table */}
                                <div>
                                   <h5 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2"><CalendarIcon className="w-5 h-5 text-indigo-600"/> جدول الدفعات الإيجارية</h5>
