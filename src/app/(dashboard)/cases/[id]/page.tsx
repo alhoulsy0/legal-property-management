@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useGlobal, HearingData, LegalFinancialData } from "../../GlobalProvider";
+import { useGlobal, HearingData, LegalFinancialData, LegalCaseData } from "../../GlobalProvider";
 import { 
   uploadCaseDocument, 
   listCaseDocuments, 
@@ -26,7 +26,10 @@ import {
   Clock, 
   Trash2, 
   Download, 
-  Loader2 
+  Loader2,
+  Edit2,
+  Save,
+  UserCheck
 } from "lucide-react";
 
 export default function CaseDetailPage() {
@@ -57,6 +60,54 @@ export default function CaseDetailPage() {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const totalPaid = caseFinancials.reduce((sum, f) => sum + f.amount, 0);
+
+  // Edit Mode toggle state
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Form States - Case Details Edit Mode
+  const [editCaseNumber, setEditCaseNumber] = useState("");
+  const [editYear, setEditYear] = useState<number>(new Date().getFullYear());
+  const [editCourtName, setEditCourtName] = useState<LegalCaseData["courtName"]>("محكمة الصلح");
+  const [editCaseType, setEditCaseType] = useState<LegalCaseData["caseType"]>("حقوقي");
+  const [editStatus, setEditStatus] = useState("");
+  const [editClaimAmount, setEditClaimAmount] = useState("");
+  const [editJudgmentDate, setEditJudgmentDate] = useState("");
+  const [editAppealDeadline, setEditAppealDeadline] = useState("");
+  const [editClientRole, setEditClientRole] = useState<"المدعي" | "المدعى عليه">("المدعي");
+  
+  // Parties details
+  const [editPlaintiffName, setEditPlaintiffName] = useState("");
+  const [editPlaintiffId, setEditPlaintiffId] = useState("");
+  const [editPlaintiffPhone, setEditPlaintiffPhone] = useState("");
+  const [editPlaintiffAddress, setEditPlaintiffAddress] = useState("");
+
+  const [editDefendantName, setEditDefendantName] = useState("");
+  const [editDefendantId, setEditDefendantId] = useState("");
+  const [editDefendantPhone, setEditDefendantPhone] = useState("");
+  const [editDefendantAddress, setEditDefendantAddress] = useState("");
+
+  // Sync Form States with currentCase values
+  useEffect(() => {
+    if (currentCase) {
+      setEditCaseNumber(currentCase.caseNumber);
+      setEditYear(currentCase.year);
+      setEditCourtName(currentCase.courtName);
+      setEditCaseType(currentCase.caseType);
+      setEditStatus(currentCase.status);
+      setEditClaimAmount(currentCase.claimAmount.toString());
+      setEditJudgmentDate(currentCase.judgment_date || "");
+      setEditAppealDeadline(currentCase.appeal_deadline || "");
+      setEditClientRole(currentCase.clientRole || "المدعي");
+      setEditPlaintiffName(currentCase.plaintiffName || "");
+      setEditPlaintiffId(currentCase.plaintiffId || "");
+      setEditPlaintiffPhone(currentCase.plaintiffPhone || "");
+      setEditPlaintiffAddress(currentCase.plaintiffAddress || "");
+      setEditDefendantName(currentCase.defendantName || "");
+      setEditDefendantId(currentCase.defendantId || "");
+      setEditDefendantPhone(currentCase.defendantPhone || "");
+      setEditDefendantAddress(currentCase.defendantAddress || "");
+    }
+  }, [currentCase, isEditing]);
 
   // Document Vault State
   const [vaultCategory, setVaultCategory] = useState<DocumentCategory>("pleadings");
@@ -109,6 +160,33 @@ export default function CaseDetailPage() {
       </div>
     );
   }
+
+  // Handle Save Case Edits
+  const handleSaveCaseEdits = () => {
+    const updated = cases.map(c => c.id === caseId ? {
+      ...c,
+      caseNumber: editCaseNumber,
+      year: Number(editYear),
+      courtName: editCourtName,
+      caseType: editCaseType,
+      status: editStatus,
+      claimAmount: Number(editClaimAmount) || 0,
+      judgment_date: editJudgmentDate || undefined,
+      appeal_deadline: editAppealDeadline || undefined,
+      clientRole: editClientRole,
+      plaintiffName: editPlaintiffName,
+      plaintiffId: editPlaintiffId,
+      plaintiffPhone: editPlaintiffPhone,
+      plaintiffAddress: editPlaintiffAddress,
+      defendantName: editDefendantName,
+      defendantId: editDefendantId,
+      defendantPhone: editDefendantPhone,
+      defendantAddress: editDefendantAddress
+    } : c);
+
+    setCases(updated);
+    setIsEditing(false);
+  };
 
   // Handle Recording outcome of court session (ضبط الجلسة)
   const handleHearingSubmit = (e: React.FormEvent) => {
@@ -179,7 +257,6 @@ export default function CaseDetailPage() {
     if (url !== "#") {
       window.open(url, "_blank");
     } else {
-      // Mock File Download trigger for local fallback demo
       const blob = new Blob(["محتوى ملف قانوني تجريبي"], { type: "application/pdf" });
       const link = document.createElement("a");
       link.href = window.URL.createObjectURL(blob);
@@ -201,7 +278,6 @@ export default function CaseDetailPage() {
     }
   };
 
-  // Helper to get human-readable file sizes
   const formatBytes = (bytes?: number) => {
     if (!bytes) return "غير معروف";
     if (bytes === 0) return "0 Bytes";
@@ -224,60 +300,301 @@ export default function CaseDetailPage() {
             <ArrowRight className="w-5 h-5 text-slate-700" />
           </button>
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">تفاصيل ملف الدعوى رقم: {currentCase.caseNumber} / {currentCase.year}</h1>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+              {isEditing ? "تعديل ملف الدعوى القضائية" : `تفاصيل ملف الدعوى رقم: ${currentCase.caseNumber} / ${currentCase.year}`}
+            </h1>
             <p className="text-slate-500 mt-1 text-sm font-semibold">محكمة {currentCase.courtName} - دعوى {currentCase.caseType}</p>
           </div>
         </div>
+        
+        {/* View / Edit Mode Action buttons */}
         <div className="flex gap-2">
-          <button
-            onClick={() => setShowHearingModal(true)}
-            className="bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-colors font-bold flex items-center gap-2 text-sm shadow-md"
-          >
-            <Plus className="w-5 h-5" />
-            <span>ضبط الجلسة الجديدة</span>
-          </button>
+          {isEditing ? (
+            <>
+              <button
+                onClick={() => setIsEditing(false)}
+                className="bg-white border border-slate-300 text-slate-700 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors font-bold text-sm shadow-sm"
+              >
+                إلغاء التعديل
+              </button>
+              <button
+                onClick={handleSaveCaseEdits}
+                className="bg-emerald-700 text-white px-5 py-2.5 rounded-xl hover:bg-emerald-800 transition-colors font-bold flex items-center gap-2 text-sm shadow-md"
+              >
+                <Save className="w-5 h-5" />
+                <span>حفظ التعديلات الحالية</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="bg-white border border-slate-350 text-slate-800 px-4 py-2.5 rounded-xl hover:bg-slate-100 transition-colors font-bold flex items-center gap-2 text-sm shadow-sm"
+              >
+                <Edit2 className="w-4 h-4 text-slate-600" />
+                <span>تعديل بيانات القضية</span>
+              </button>
+              <button
+                onClick={() => setShowHearingModal(true)}
+                className="bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-colors font-bold flex items-center gap-2 text-sm shadow-md"
+              >
+                <Plus className="w-5 h-5" />
+                <span>ضبط الجلسة الجديدة</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Top Section Case Quick Info */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="border-l border-slate-100 pl-4">
-          <span className="text-slate-500 block text-xs font-bold mb-1">الموكل المدعي/المدعى عليه:</span>
-          <span className="text-slate-955 font-extrabold text-base block">{client?.name || "غير معروف"}</span>
-          <span className="text-slate-500 text-xs mt-1 block">الرقم الوطني: {client?.nationalId || "غير متوفر"}</span>
-        </div>
-        <div className="border-l border-slate-100 pl-4">
-          <span className="text-slate-500 block text-xs font-bold mb-1">حالة الدعوى القضائية:</span>
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`px-2.5 py-1 rounded-md text-xs font-extrabold ${
-              currentCase.status === "مفتوحة" ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"
-            }`}>
-              {currentCase.status}
-            </span>
-          </div>
-        </div>
-        <div className="border-l border-slate-100 pl-4">
-          <span className="text-slate-500 block text-xs font-bold mb-1">الوكالة العدلية المعمول بها:</span>
-          {activeWakala ? (
-            <div className="mt-0.5">
-              <span className="text-emerald-700 font-extrabold text-sm block">{activeWakala.wakalaNumber} ({activeWakala.type})</span>
-              <span className="text-slate-500 text-xs block">كاتب عدل: {activeWakala.notaryPublicName}</span>
+      {/* Top Section Case Quick Info - EDITABLE/STATIC */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+        {isEditing ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-xs font-bold text-slate-700">
+            <div>
+              <label className="block text-[10px] text-slate-500 mb-1">رقم الدعوى والسنة</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={editCaseNumber} 
+                  onChange={e => setEditCaseNumber(e.target.value)} 
+                  className="w-2/3 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 font-bold" 
+                />
+                <input 
+                  type="number" 
+                  value={editYear} 
+                  onChange={e => setEditYear(Number(e.target.value))} 
+                  className="w-1/3 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 font-bold" 
+                />
+              </div>
             </div>
-          ) : (
-            <span className="text-rose-600 font-bold text-xs flex items-center gap-1 mt-1">
-              <AlertTriangle className="w-3.5 h-3.5" /> لا توجد وكالة عدلية فعالة مسجلة
-            </span>
-          )}
-        </div>
-        <div>
-          <span className="text-slate-500 block text-xs font-bold mb-1">المهلة القانونية للاستئناف:</span>
-          <span className="text-slate-900 font-black block mt-0.5 text-base">
-            {currentCase.appeal_deadline ? currentCase.appeal_deadline : "لم يتم تحديد قرار بعد"}
-          </span>
-          {currentCase.judgment_date && (
-            <span className="text-slate-500 text-xs block mt-1">تاريخ صدور الحكم: {currentCase.judgment_date}</span>
-          )}
-        </div>
+
+            <div>
+              <label className="block text-[10px] text-slate-500 mb-1">المحكمة والنوع</label>
+              <div className="flex gap-2">
+                <select 
+                  value={editCourtName} 
+                  onChange={e => setEditCourtName(e.target.value as any)} 
+                  className="w-1/2 px-2 py-2 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 font-bold cursor-pointer"
+                >
+                  <option value="محكمة الصلح">محكمة الصلح</option>
+                  <option value="محكمة البداية">محكمة البداية</option>
+                  <option value="محكمة الاستئناف">محكمة الاستئناف</option>
+                  <option value="محكمة التمييز">محكمة التمييز</option>
+                  <option value="محكمة شرعية">محكمة شرعية</option>
+                </select>
+                <select 
+                  value={editCaseType} 
+                  onChange={e => setEditCaseType(e.target.value as any)} 
+                  className="w-1/2 px-2 py-2 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 font-bold cursor-pointer"
+                >
+                  <option value="حقوقي">حقوقي</option>
+                  <option value="جزائي">جزائي</option>
+                  <option value="شرعي">شرعي</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] text-slate-500 mb-1">صفة الموكل وحالة القضية</label>
+              <div className="flex gap-2">
+                <select 
+                  value={editClientRole} 
+                  onChange={e => setEditClientRole(e.target.value as any)} 
+                  className="w-1/2 px-2 py-2 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 font-bold cursor-pointer"
+                >
+                  <option value="المدعي">المدعي</option>
+                  <option value="المدعى عليه">المدعى عليه</option>
+                </select>
+                <select 
+                  value={editStatus} 
+                  onChange={e => setEditStatus(e.target.value)} 
+                  className="w-1/2 px-2 py-2 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 font-bold cursor-pointer"
+                >
+                  <option value="مفتوحة">مفتوحة</option>
+                  <option value="مغلقة">مغلقة</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] text-slate-500 mb-1">المطالبة المالية والتواريخ</label>
+              <div className="flex gap-2">
+                <input 
+                  type="number" 
+                  value={editClaimAmount} 
+                  onChange={e => setEditClaimAmount(e.target.value)} 
+                  className="w-1/2 px-2 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 font-bold" 
+                  placeholder="المطالبة د.أ"
+                />
+                <input 
+                  type="date" 
+                  value={editAppealDeadline} 
+                  onChange={e => setEditAppealDeadline(e.target.value)} 
+                  className="w-1/2 px-2 py-2 bg-slate-50 border border-slate-300 rounded-lg text-[10px] text-slate-900 font-semibold" 
+                  title="تاريخ مهلة الاستئناف"
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="border-l border-slate-100 pl-4">
+              <span className="text-slate-500 block text-xs font-bold mb-1">الموكل المدعي/المدعى عليه:</span>
+              <span className="text-slate-950 font-extrabold text-base block">{client?.name || "غير معروف"} ({currentCase.clientRole})</span>
+              <span className="text-slate-500 text-xs mt-1 block">الرقم الوطني: {client?.nationalId || "غير متوفر"}</span>
+            </div>
+            <div className="border-l border-slate-100 pl-4">
+              <span className="text-slate-500 block text-xs font-bold mb-1">حالة الدعوى القضائية:</span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`px-2.5 py-1 rounded-md text-xs font-extrabold ${
+                  currentCase.status === "مفتوحة" ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                }`}>
+                  {currentCase.status}
+                </span>
+              </div>
+            </div>
+            <div className="border-l border-slate-100 pl-4">
+              <span className="text-slate-500 block text-xs font-bold mb-1">الوكالة العدلية المعمول بها:</span>
+              {activeWakala ? (
+                <div className="mt-0.5">
+                  <span className="text-emerald-700 font-extrabold text-sm block">{activeWakala.wakalaNumber} ({activeWakala.type})</span>
+                  <span className="text-slate-500 text-xs block">كاتب عدل: {activeWakala.notaryPublicName}</span>
+                </div>
+              ) : (
+                <span className="text-rose-600 font-bold text-xs flex items-center gap-1 mt-1">
+                  <AlertTriangle className="w-3.5 h-3.5" /> لا توجد وكالة عدلية فعالة مسجلة
+                </span>
+              )}
+            </div>
+            <div>
+              <span className="text-slate-500 block text-xs font-bold mb-1">المهلة القانونية للاستئناف:</span>
+              <span className="text-slate-900 font-black block mt-0.5 text-base">
+                {currentCase.appeal_deadline ? currentCase.appeal_deadline : "لم يتم تحديد قرار بعد"}
+              </span>
+              {currentCase.judgment_date && (
+                <span className="text-slate-500 text-xs block mt-1">تاريخ صدور الحكم: {currentCase.judgment_date}</span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* PARTIES INFO SECTION (plaintiff vs defendant details check & update) */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+        <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
+          <UserCheck className="w-5 h-5 text-indigo-700" />
+          <span>أطراف الخصومة والبيانات القانونية</span>
+        </h3>
+        
+        {isEditing ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs font-bold text-slate-700">
+            {/* Edit Plaintiff */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+              <span className="font-black text-slate-900 block border-b pb-2 mb-1 text-indigo-700">المدعي (Plaintiff)</span>
+              <div>
+                <label className="block text-[10px] text-slate-500 mb-1">الاسم الكامل للخصم/المدعي</label>
+                <input 
+                  type="text" 
+                  value={editPlaintiffName} 
+                  onChange={e => setEditPlaintiffName(e.target.value)} 
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 font-bold" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-1">الرقم الوطني / الرقم الضريبي</label>
+                  <input 
+                    type="text" 
+                    value={editPlaintiffId} 
+                    onChange={e => setEditPlaintiffId(e.target.value)} 
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 font-bold" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-1">رقم الهاتف للتبليغ</label>
+                  <input 
+                    type="text" 
+                    value={editPlaintiffPhone} 
+                    onChange={e => setEditPlaintiffPhone(e.target.value)} 
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 font-bold" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 mb-1">العنوان بالتفصيل للمثول القضائي</label>
+                <input 
+                  type="text" 
+                  value={editPlaintiffAddress} 
+                  onChange={e => setEditPlaintiffAddress(e.target.value)} 
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 font-bold" 
+                />
+              </div>
+            </div>
+
+            {/* Edit Defendant */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+              <span className="font-black text-slate-900 block border-b pb-2 mb-1 text-rose-700">المدعى عليه (Defendant)</span>
+              <div>
+                <label className="block text-[10px] text-slate-500 mb-1">الاسم الكامل للخصم/المدعى عليه</label>
+                <input 
+                  type="text" 
+                  value={editDefendantName} 
+                  onChange={e => setEditDefendantName(e.target.value)} 
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 font-bold" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-1">الرقم الوطني / الرقم الضريبي للخصم</label>
+                  <input 
+                    type="text" 
+                    value={editDefendantId} 
+                    onChange={e => setEditDefendantId(e.target.value)} 
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 font-bold" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-1">رقم الهاتف للخصم</label>
+                  <input 
+                    type="text" 
+                    value={editDefendantPhone} 
+                    onChange={e => setEditDefendantPhone(e.target.value)} 
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 font-bold" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 mb-1">العنوان للخصم بالتفصيل</label>
+                <input 
+                  type="text" 
+                  value={editDefendantAddress} 
+                  onChange={e => setEditDefendantAddress(e.target.value)} 
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 font-bold" 
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm font-semibold text-slate-700">
+            {/* Display Plaintiff */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+              <span className="font-black text-slate-900 block border-b pb-2 mb-2 text-indigo-700">المدعي (Plaintiff)</span>
+              <p><span className="text-slate-400">الاسم الكامل:</span> <span className="text-slate-900 font-extrabold">{currentCase.plaintiffName || "غير محدد"}</span></p>
+              <p><span className="text-slate-400">الرقم الوطني:</span> <span className="text-slate-900 font-extrabold">{currentCase.plaintiffId || "غير متوفر"}</span></p>
+              <p><span className="text-slate-400">رقم الهاتف:</span> <span className="text-slate-900 font-extrabold">{currentCase.plaintiffPhone || "غير متوفر"}</span></p>
+              <p><span className="text-slate-400">العنوان:</span> <span className="text-slate-900">{currentCase.plaintiffAddress || "غير متوفر"}</span></p>
+            </div>
+
+            {/* Display Defendant */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+              <span className="font-black text-slate-900 block border-b pb-2 mb-2 text-rose-700">المدعى عليه (Defendant)</span>
+              <p><span className="text-slate-400">الاسم الكامل:</span> <span className="text-slate-900 font-extrabold">{currentCase.defendantName || "غير محدد"}</span></p>
+              <p><span className="text-slate-400">الرقم الوطني:</span> <span className="text-slate-900 font-extrabold">{currentCase.defendantId || "غير متوفر"}</span></p>
+              <p><span className="text-slate-400">رقم الهاتف:</span> <span className="text-slate-900 font-extrabold">{currentCase.defendantPhone || "غير متوفر"}</span></p>
+              <p><span className="text-slate-400">العنوان:</span> <span className="text-slate-900">{currentCase.defendantAddress || "غير متوفر"}</span></p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Two Column Layout */}
@@ -676,7 +993,7 @@ export default function CaseDetailPage() {
                   type="date" 
                   value={expenseDate} 
                   onChange={e => setExpenseDate(e.target.value)} 
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-950" 
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-900" 
                   required 
                 />
               </div>

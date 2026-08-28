@@ -81,6 +81,15 @@ export type LegalCaseData = {
   claimAmount: number;
   judgment_date?: string;
   appeal_deadline?: string;
+  clientRole?: "المدعي" | "المدعى عليه";
+  plaintiffName?: string;
+  plaintiffId?: string;
+  plaintiffPhone?: string;
+  plaintiffAddress?: string;
+  defendantName?: string;
+  defendantId?: string;
+  defendantPhone?: string;
+  defendantAddress?: string;
 };
 
 export type HearingData = {
@@ -189,8 +198,44 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
       setCases(JSON.parse(savedCases));
     } else {
       setCases([
-        { id: "c-1", clientId: 1, caseNumber: "543/2026", year: 2026, courtName: "محكمة البداية", caseType: "حقوقي", status: "مفتوحة", claimAmount: 12000 },
-        { id: "c-2", clientId: 1, caseNumber: "89/2025", year: 2025, courtName: "محكمة الصلح", caseType: "جزائي", status: "مغلقة", claimAmount: 1500 }
+        { 
+          id: "c-1", 
+          clientId: 1, 
+          caseNumber: "543/2026", 
+          year: 2026, 
+          courtName: "محكمة البداية", 
+          caseType: "حقوقي", 
+          status: "مفتوحة", 
+          claimAmount: 12000,
+          clientRole: "المدعي",
+          plaintiffName: "شركة الأفق للاستيراد والتصدير",
+          plaintiffId: "2000123456",
+          plaintiffPhone: "+962 7 9123 4567",
+          plaintiffAddress: "عمان، شارع المدينة المنورة، مجمع الأفق",
+          defendantName: "شركة التوزيع والتسويق المحلية",
+          defendantId: "2000445566",
+          defendantPhone: "+962 7 9888 7766",
+          defendantAddress: "الزرقاء، المنطقة الحرة"
+        },
+        { 
+          id: "c-2", 
+          clientId: 1, 
+          caseNumber: "89/2025", 
+          year: 2025, 
+          courtName: "محكمة الصلح", 
+          caseType: "جزائي", 
+          status: "مغلقة", 
+          claimAmount: 1500,
+          clientRole: "المدعى عليه",
+          plaintiffName: "مؤسسة التمويل الوطني",
+          plaintiffId: "2000778899",
+          plaintiffPhone: "+962 6 555 4433",
+          plaintiffAddress: "عمان، جبل عمان، الدوار الثالث",
+          defendantName: "شركة الأفق للاستيراد والتصدير",
+          defendantId: "2000123456",
+          defendantPhone: "+962 7 9123 4567",
+          defendantAddress: "عمان، شارع المدينة المنورة، مجمع الأفق"
+        }
       ]);
     }
 

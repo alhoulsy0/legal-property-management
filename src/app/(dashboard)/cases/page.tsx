@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGlobal, LegalCaseData, WakalaData, HearingData, LegalFinancialData } from "../GlobalProvider";
-import { Scale, FileText, Calendar, DollarSign, Plus, Search, User, Clock, ArrowLeft, AlertTriangle, ShieldCheck, Check, Trash2, X, Activity } from "lucide-react";
+import { Scale, FileText, Calendar, DollarSign, Plus, Search, User, Clock, ArrowLeft, ArrowRight, AlertTriangle, ShieldCheck, Check, Trash2, X, Activity } from "lucide-react";
 
 function CasesPageContent() {
   const router = useRouter();
@@ -36,18 +36,68 @@ function CasesPageContent() {
   const [statusFilter, setStatusFilter] = useState("");
 
   // Modals Toggle
-  const [showAddCaseModal, setShowAddCaseModal] = useState(false);
+  const [showAddCaseWizard, setShowAddCaseWizard] = useState(false);
   const [showAddWakalaModal, setShowAddWakalaModal] = useState(false);
 
-  // Form States - Case
-  const [newCaseNumber, setNewCaseNumber] = useState("");
-  const [newCaseYear, setNewCaseYear] = useState(new Date().getFullYear());
-  const [newCaseClientId, setNewCaseClientId] = useState<string>("");
-  const [newCaseCourt, setNewCaseCourt] = useState<LegalCaseData["courtName"]>("محكمة الصلح");
-  const [newCaseType, setNewCaseType] = useState<LegalCaseData["caseType"]>("حقوقي");
-  const [newCaseStatus, setNewCaseStatus] = useState("مفتوحة");
-  const [newCaseClaimAmt, setNewCaseClaimAmt] = useState("");
-  const [caseError, setCaseError] = useState("");
+  // ==========================================
+  // WIZARD FORM STATES (Step-by-step case registration)
+  // ==========================================
+  const [wizardStep, setWizardStep] = useState(1);
+  
+  // Step 1: Client & Role selection
+  const [wClientId, setWClientId] = useState<string>("");
+  const [wClientRole, setWClientRole] = useState<"المدعي" | "المدعى عليه">("المدعي");
+
+  // Step 2: Parties Information (Plaintiff & Defendant details)
+  const [wPlaintiffName, setWPlaintiffName] = useState("");
+  const [wPlaintiffId, setWPlaintiffId] = useState("");
+  const [wPlaintiffPhone, setWPlaintiffPhone] = useState("");
+  const [wPlaintiffAddress, setWPlaintiffAddress] = useState("");
+
+  const [wDefendantName, setWDefendantName] = useState("");
+  const [wDefendantId, setWDefendantId] = useState("");
+  const [wDefendantPhone, setWDefendantPhone] = useState("");
+  const [wDefendantAddress, setWDefendantAddress] = useState("");
+
+  // Step 3: Case details
+  const [wCaseNumber, setWCaseNumber] = useState("");
+  const [wCaseYear, setWCaseYear] = useState(new Date().getFullYear());
+  const [wCourtName, setWCourtName] = useState<LegalCaseData["courtName"]>("محكمة الصلح");
+  const [wCaseType, setWCaseType] = useState<LegalCaseData["caseType"]>("حقوقي");
+  const [wClaimAmount, setWClaimAmount] = useState("");
+  
+  const [wizardError, setWizardError] = useState("");
+
+  // Auto-fill client details based on chosen Client & ClientRole
+  useEffect(() => {
+    if (!wClientId) return;
+    const selectedClient = clients.find(cl => cl.id === Number(wClientId));
+    if (!selectedClient) return;
+
+    if (wClientRole === "المدعي") {
+      // Auto-fill Plaintiff with client info
+      setWPlaintiffName(selectedClient.name);
+      setWPlaintiffId(selectedClient.nationalId || "");
+      setWPlaintiffPhone(selectedClient.phone || "");
+      
+      // Clear defendant values so they can enter opponent
+      setWDefendantName("");
+      setWDefendantId("");
+      setWDefendantPhone("");
+      setWDefendantAddress("");
+    } else {
+      // Auto-fill Defendant with client info
+      setWDefendantName(selectedClient.name);
+      setWDefendantId(selectedClient.nationalId || "");
+      setWDefendantPhone(selectedClient.phone || "");
+
+      // Clear plaintiff values so they can enter opponent
+      setWPlaintiffName("");
+      setWPlaintiffId("");
+      setWPlaintiffPhone("");
+      setWPlaintiffAddress("");
+    }
+  }, [wClientId, wClientRole, clients]);
 
   // Form States - Wakala
   const [newWakalaNumber, setNewWakalaNumber] = useState("");
@@ -70,7 +120,9 @@ function CasesPageContent() {
     const matchesSearch = 
       c.caseNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.year.toString().includes(searchQuery) ||
-      clientName.toLowerCase().includes(searchQuery.toLowerCase());
+      clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.plaintiffName && c.plaintiffName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (c.defendantName && c.defendantName.toLowerCase().includes(searchQuery.toLowerCase()));
       
     const matchesCourt = courtFilter ? c.courtName === courtFilter : true;
     const matchesType = typeFilter ? c.caseType === typeFilter : true;
@@ -94,42 +146,75 @@ function CasesPageContent() {
     .filter(h => h.nextSessionDate)
     .sort((a, b) => new Date(a.nextSessionDate!).getTime() - new Date(b.nextSessionDate!).getTime());
 
-  // Handlers - Add Case
-  const handleAddCaseSubmit = (e: React.FormEvent) => {
+  // Handlers - Next wizard step validation
+  const handleWizardNext = () => {
+    setWizardError("");
+
+    if (wizardStep === 1) {
+      if (!wClientId) {
+        setWizardError("الرجاء اختيار الموكيل أولاً.");
+        return;
+      }
+      setWizardStep(2);
+    } else if (wizardStep === 2) {
+      if (!wPlaintiffName || !wDefendantName) {
+        setWizardError("الرجاء إدخال أسماء أطراف القضية (المدعي والمدعى عليه).");
+        return;
+      }
+      setWizardStep(3);
+    } else if (wizardStep === 3) {
+      if (!wCaseNumber || !wCaseYear) {
+        setWizardError("الرجاء تعبئة رقم القضية وسنة التسجيل.");
+        return;
+      }
+      
+      // Enforce unique Case + Court + Year validation
+      const duplicate = cases.some(
+        c => c.caseNumber === wCaseNumber && c.year === Number(wCaseYear) && c.courtName === wCourtName
+      );
+
+      if (duplicate) {
+        setWizardError("رقم الدعوى هذا مسجل بالفعل لنفس السنة والمحكمة.");
+        return;
+      }
+      setWizardStep(4);
+    }
+  };
+
+  // Submit case wizard
+  const handleWizardSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setCaseError("");
-
-    if (!newCaseClientId || !newCaseNumber) {
-      setCaseError("الرجاء تعبئة جميع الحقول المطلوبة.");
-      return;
-    }
-
-    const duplicate = cases.some(
-      c => c.caseNumber === newCaseNumber && c.year === Number(newCaseYear) && c.courtName === newCaseCourt
-    );
-
-    if (duplicate) {
-      setCaseError("رقم الدعوى هذا مسجل بالفعل لنفس السنة والمحكمة.");
-      return;
-    }
+    setWizardError("");
 
     const newCaseObj: LegalCaseData = {
       id: `c-${Date.now()}`,
-      clientId: Number(newCaseClientId),
-      caseNumber: newCaseNumber,
-      year: Number(newCaseYear),
-      courtName: newCaseCourt,
-      caseType: newCaseType,
-      status: newCaseStatus,
-      claimAmount: Number(newCaseClaimAmt) || 0
+      clientId: Number(wClientId),
+      caseNumber: wCaseNumber,
+      year: Number(wCaseYear),
+      courtName: wCourtName,
+      caseType: wCaseType,
+      status: "مفتوحة",
+      claimAmount: Number(wClaimAmount) || 0,
+      clientRole: wClientRole,
+      plaintiffName: wPlaintiffName,
+      plaintiffId: wPlaintiffId,
+      plaintiffPhone: wPlaintiffPhone,
+      plaintiffAddress: wPlaintiffAddress,
+      defendantName: wDefendantName,
+      defendantId: wDefendantId,
+      defendantPhone: wDefendantPhone,
+      defendantAddress: wDefendantAddress
     };
 
     setCases([...cases, newCaseObj]);
-    setShowAddCaseModal(false);
-    setNewCaseNumber("");
-    setNewCaseYear(new Date().getFullYear());
-    setNewCaseClientId("");
-    setNewCaseClaimAmt("");
+    setShowAddCaseWizard(false);
+    
+    // Reset Form & Steps
+    setWizardStep(1);
+    setWClientId("");
+    setWCaseNumber("");
+    setWCaseYear(new Date().getFullYear());
+    setWClaimAmount("");
   };
 
   // Handlers - Add Wakala
@@ -191,11 +276,14 @@ function CasesPageContent() {
         <div className="flex gap-2">
           {activeTab === "cases" && (
             <button
-              onClick={() => setShowAddCaseModal(true)}
+              onClick={() => {
+                setWizardStep(1);
+                setShowAddCaseWizard(true);
+              }}
               className="bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-colors font-bold flex items-center gap-2 text-sm shadow-md"
             >
               <Plus className="w-5 h-5" />
-              <span>تسجيل قضية جديدة</span>
+              <span>تسجيل قضية جديدة (مساعد الخطوات)</span>
             </button>
           )}
           {activeTab === "wakalas" && (
@@ -210,7 +298,7 @@ function CasesPageContent() {
         </div>
       </div>
 
-      {/* Renders Metrics summary for current tabs */}
+      {/* Renders Metrics summary */}
       {activeTab === "cases" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
@@ -306,7 +394,7 @@ function CasesPageContent() {
             <Search className="absolute right-3.5 top-3 w-4 h-4 text-slate-500" />
             <input
               type="text"
-              placeholder={activeTab === "cases" ? "ابحث برقم الدعوى أو الموكل..." : "ابحث برقم الوكالة أو كاتب العدل..."}
+              placeholder={activeTab === "cases" ? "ابحث برقم الدعوى، الموكل، أو أطراف النزاع..." : "ابحث برقم الوكالة أو كاتب العدل..."}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full pr-10 pl-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-600 focus:ring-2 focus:ring-slate-900 outline-none"
@@ -378,7 +466,13 @@ function CasesPageContent() {
                   <div className="space-y-2 mt-4 text-sm font-semibold text-slate-600 border-b border-slate-100 pb-4">
                     <div className="flex justify-between">
                       <span className="text-slate-500">الموكل:</span>
-                      <span className="text-slate-900">{client ? client.name : "غير معروف"}</span>
+                      <span className="text-slate-900">{client ? client.name : "غير معروف"} ({c.clientRole})</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">الخصم المقابل:</span>
+                      <span className="text-slate-900 font-extrabold">
+                        {c.clientRole === "المدعي" ? c.defendantName : c.plaintiffName}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">المحكمة:</span>
@@ -398,9 +492,9 @@ function CasesPageContent() {
                   </div>
                   <button 
                     onClick={() => router.push(`/cases/${c.id}`)}
-                    className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                    className="bg-slate-55 hover:bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm"
                   >
-                    <span>التفاصيل والجلسات</span>
+                    <span>تفاصيل القضية كاملة</span>
                     <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
                   </button>
                 </div>
@@ -565,135 +659,346 @@ function CasesPageContent() {
       )}
 
       {/* ========================================== */}
-      {/* ADD CASE MODAL                             */}
+      {/* ADD CASE WIZARD MODAL (Multi-step form)    */}
       {/* ========================================== */}
-      {showAddCaseModal && (
+      {showAddCaseWizard && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[90vh] overflow-y-auto custom-scrollbar flex flex-col p-6">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar flex flex-col p-6">
+            
+            {/* Header */}
             <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
-              <h3 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-                <Scale className="w-6 h-6 text-slate-700" />
-                <span>تسجيل ملف دعوى جديدة</span>
-              </h3>
-              <button onClick={() => { setShowAddCaseModal(false); setCaseError(""); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500">
+              <div>
+                <h3 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                  <Scale className="w-6 h-6 text-slate-700" />
+                  <span>مساعد تسجيل دعوى قضائية جديدة</span>
+                </h3>
+                <p className="text-slate-400 text-xs font-bold mt-1">الخطوة {wizardStep} من 4</p>
+              </div>
+              <button 
+                onClick={() => { setShowAddCaseWizard(false); setWizardError(""); }} 
+                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {caseError && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl text-sm font-bold flex items-center gap-2.5 mb-4">
+            {/* Step Progress indicators */}
+            <div className="grid grid-cols-4 gap-2 mb-6 text-center text-[10px] font-black text-slate-500">
+              <div className={`py-2 rounded-lg border ${wizardStep >= 1 ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 border-slate-200"}`}>1. الموكل والصفة</div>
+              <div className={`py-2 rounded-lg border ${wizardStep >= 2 ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 border-slate-200"}`}>2. أطراف الخصومة</div>
+              <div className={`py-2 rounded-lg border ${wizardStep >= 3 ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 border-slate-200"}`}>3. بيانات المحكمة</div>
+              <div className={`py-2 rounded-lg border ${wizardStep >= 4 ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 border-slate-200"}`}>4. المراجعة والتاكيد</div>
+            </div>
+
+            {wizardError && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl text-xs font-bold flex items-center gap-2.5 mb-4">
                 <AlertTriangle className="w-5 h-5 shrink-0 text-rose-600" />
-                <span>{caseError}</span>
+                <span>{wizardError}</span>
               </div>
             )}
 
-            <form onSubmit={handleAddCaseSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">الموكل (المدعي/المدعى عليه)</label>
-                <select 
-                  value={newCaseClientId} 
-                  onChange={e => setNewCaseClientId(e.target.value)} 
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-bold text-slate-900 cursor-pointer"
-                  required
-                >
-                  <option value="">-- اختر الموكل --</option>
-                  {clients.map(cl => (
-                    <option key={cl.id} value={cl.id}>{cl.name} (الرقم الوطني: {cl.nationalId || "غير متوفر"})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">رقم الدعوى</label>
-                  <input 
-                    type="text" 
-                    placeholder="مثال: 543" 
-                    value={newCaseNumber} 
-                    onChange={e => setNewCaseNumber(e.target.value)} 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-semibold text-slate-900 placeholder-slate-600" 
-                    required 
-                  />
+            <form onSubmit={handleWizardSubmit} className="space-y-5 flex-1">
+              
+              {/* STEP 1: Select Client & Role */}
+              {wizardStep === 1 && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">اختر الموكل المسجل في النظام</label>
+                    <select 
+                      value={wClientId} 
+                      onChange={e => setWClientId(e.target.value)} 
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-bold text-slate-900 cursor-pointer"
+                      required
+                    >
+                      <option value="">-- اختر الموكل --</option>
+                      {clients.map(cl => (
+                        <option key={cl.id} value={cl.id}>{cl.name} (الرقم الوطني: {cl.nationalId || "غير متوفر"})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">صفة الموكل في الدعوى</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setWClientRole("المدعي")}
+                        className={`py-3 px-4 rounded-xl border text-sm font-black transition-all ${
+                          wClientRole === "المدعي" 
+                            ? "bg-slate-900 text-white border-slate-900" 
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        المدعي (Plaintiff)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWClientRole("المدعى عليه")}
+                        className={`py-3 px-4 rounded-xl border text-sm font-black transition-all ${
+                          wClientRole === "المدعى عليه" 
+                            ? "bg-slate-900 text-white border-slate-900" 
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        المدعى عليه (Defendant)
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">السنة</label>
-                  <input 
-                    type="number" 
-                    value={newCaseYear} 
-                    onChange={e => setNewCaseYear(Number(e.target.value))} 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-semibold text-slate-900" 
-                    required 
-                  />
-                </div>
-              </div>
+              )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">المحكمة</label>
-                  <select 
-                    value={newCaseCourt} 
-                    onChange={e => setNewCaseCourt(e.target.value as any)} 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-bold text-slate-900 cursor-pointer"
+              {/* STEP 2: Parties Information */}
+              {wizardStep === 2 && (
+                <div className="space-y-6">
+                  {/* Plaintiff details */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                    <h4 className="text-xs font-black text-slate-900 border-b pb-2 flex justify-between items-center">
+                      <span>الجهة المدعية (المدعي)</span>
+                      {wClientRole === "المدعي" && <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">الموكل الخاص بنا (تعبئة تلقائية)</span>}
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-1">الاسم بالكامل</label>
+                        <input 
+                          type="text" 
+                          value={wPlaintiffName} 
+                          onChange={e => setWPlaintiffName(e.target.value)} 
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
+                          required 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-1">الرقم الوطني / رقم المنشأة</label>
+                        <input 
+                          type="text" 
+                          placeholder="الرقم الوطني (10 أرقام)"
+                          value={wPlaintiffId} 
+                          onChange={e => setWPlaintiffId(e.target.value)} 
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-1">رقم الهاتف</label>
+                        <input 
+                          type="text" 
+                          value={wPlaintiffPhone} 
+                          onChange={e => setWPlaintiffPhone(e.target.value)} 
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-1">العنوان بالتفصيل</label>
+                        <input 
+                          type="text" 
+                          value={wPlaintiffAddress} 
+                          onChange={e => setWPlaintiffAddress(e.target.value)} 
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Defendant details */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                    <h4 className="text-xs font-black text-slate-900 border-b pb-2 flex justify-between items-center">
+                      <span>الجهة المدعى عليها (المدعى عليه)</span>
+                      {wClientRole === "المدعى عليه" && <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">الموكل الخاص بنا (تعبئة تلقائية)</span>}
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-1">الاسم بالكامل / الخصم</label>
+                        <input 
+                          type="text" 
+                          value={wDefendantName} 
+                          onChange={e => setWDefendantName(e.target.value)} 
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
+                          required 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-1">الرقم الوطني / رقم المنشأة للخصم</label>
+                        <input 
+                          type="text" 
+                          placeholder="الرقم الوطني (10 أرقام)"
+                          value={wDefendantId} 
+                          onChange={e => setWDefendantId(e.target.value)} 
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-1">رقم الهاتف للخصم</label>
+                        <input 
+                          type="text" 
+                          value={wDefendantPhone} 
+                          onChange={e => setWDefendantPhone(e.target.value)} 
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-1">العنوان للخصم بالتفصيل</label>
+                        <input 
+                          type="text" 
+                          value={wDefendantAddress} 
+                          onChange={e => setWDefendantAddress(e.target.value)} 
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 placeholder-slate-600" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3: Case details */}
+              {wizardStep === 3 && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">رقم الدعوى</label>
+                      <input 
+                        type="text" 
+                        placeholder="مثال: 543" 
+                        value={wCaseNumber} 
+                        onChange={e => setWCaseNumber(e.target.value)} 
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-semibold text-slate-900 placeholder-slate-600" 
+                        required 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">السنة</label>
+                      <input 
+                        type="number" 
+                        value={wCaseYear} 
+                        onChange={e => setWCaseYear(Number(e.target.value))} 
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-semibold text-slate-900" 
+                        required 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">المحكمة المختصة</label>
+                      <select 
+                        value={wCourtName} 
+                        onChange={e => setWCourtName(e.target.value as any)} 
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-bold text-slate-900 cursor-pointer"
+                      >
+                        <option value="محكمة الصلح">محكمة الصلح</option>
+                        <option value="محكمة البداية">محكمة البداية</option>
+                        <option value="محكمة الاستئناف">محكمة الاستئناف</option>
+                        <option value="محكمة التمييز">محكمة التمييز</option>
+                        <option value="محكمة شرعية">محكمة شرعية</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">نوع الدعوى</label>
+                      <select 
+                        value={wCaseType} 
+                        onChange={e => setWCaseType(e.target.value as any)} 
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-bold text-slate-900 cursor-pointer"
+                      >
+                        <option value="حقوقي">حقوقي</option>
+                        <option value="جزائي">جزائي</option>
+                        <option value="شرعي">شرعي</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">قيمة المطالبة المالية (د.أ)</label>
+                    <input 
+                      type="number" 
+                      placeholder="0.00" 
+                      value={wClaimAmount} 
+                      onChange={e => setWClaimAmount(e.target.value)} 
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-semibold text-slate-900 placeholder-slate-600" 
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 4: Review and Summary */}
+              {wizardStep === 4 && (
+                <div className="space-y-4">
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4 text-sm font-semibold">
+                    <h4 className="text-base font-black text-slate-900 border-b pb-2">ملخص بيانات ملف الدعوى الجديد</h4>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-slate-600">
+                      <div>
+                        <span className="text-slate-400 block text-xs">رقم القضية:</span>
+                        <span className="text-slate-900 font-extrabold text-base">{wCaseNumber} / {wCaseYear}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-xs">المحكمة والنوع:</span>
+                        <span className="text-slate-900 font-extrabold">{wCourtName} ({wCaseType})</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-xs">قيمة المطالبة:</span>
+                        <span className="text-indigo-700 font-black">د.أ {Number(wClaimAmount || 0).toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-xs">الموكل والصفة:</span>
+                        <span className="text-emerald-700 font-extrabold">{clients.find(c => c.id === Number(wClientId))?.name} ({wClientRole})</span>
+                      </div>
+                    </div>
+
+                    <hr className="border-slate-200" />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-white p-3.5 rounded-xl border border-slate-100 space-y-1 text-xs">
+                        <span className="font-black text-slate-900 block border-b pb-1.5 mb-1.5 text-indigo-700">المدعي (Plaintiff)</span>
+                        <p><span className="text-slate-400">الاسم:</span> {wPlaintiffName}</p>
+                        {wPlaintiffId && <p><span className="text-slate-400">الرقم الوطني:</span> {wPlaintiffId}</p>}
+                        {wPlaintiffPhone && <p><span className="text-slate-400">الهاتف:</span> {wPlaintiffPhone}</p>}
+                        {wPlaintiffAddress && <p><span className="text-slate-400">العنوان:</span> {wPlaintiffAddress}</p>}
+                      </div>
+
+                      <div className="bg-white p-3.5 rounded-xl border border-slate-100 space-y-1 text-xs">
+                        <span className="font-black text-slate-900 block border-b pb-1.5 mb-1.5 text-rose-700">المدعى عليه (Defendant)</span>
+                        <p><span className="text-slate-400">الاسم:</span> {wDefendantName}</p>
+                        {wDefendantId && <p><span className="text-slate-400">الرقم الوطني:</span> {wDefendantId}</p>}
+                        {wDefendantPhone && <p><span className="text-slate-400">الهاتف:</span> {wDefendantPhone}</p>}
+                        {wDefendantAddress && <p><span className="text-slate-400">العنوان:</span> {wDefendantAddress}</p>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation buttons */}
+              <div className="pt-4 border-t border-slate-100 flex gap-3 justify-end">
+                {wizardStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setWizardStep(wizardStep - 1)}
+                    className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm font-bold shadow-sm flex items-center gap-1.5"
                   >
-                    <option value="محكمة الصلح">محكمة الصلح</option>
-                    <option value="محكمة البداية">محكمة البداية</option>
-                    <option value="محكمة الاستئناف">محكمة الاستئناف</option>
-                    <option value="محكمة التمييز">محكمة التمييز</option>
-                    <option value="محكمة شرعية">محكمة شرعية</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">نوع الدعوى</label>
-                  <select 
-                    value={newCaseType} 
-                    onChange={e => setNewCaseType(e.target.value as any)} 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-bold text-slate-900 cursor-pointer"
+                    <ArrowRight className="w-4 h-4" />
+                    <span>السابق</span>
+                  </button>
+                )}
+                
+                {wizardStep < 4 ? (
+                  <button
+                    type="button"
+                    onClick={handleWizardNext}
+                    className="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 text-sm font-bold shadow-sm flex items-center gap-1.5"
                   >
-                    <option value="حقوقي">حقوقي</option>
-                    <option value="جزائي">جزائي</option>
-                    <option value="شرعي">شرعي</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">قيمة المطالبة (د.أ)</label>
-                  <input 
-                    type="number" 
-                    placeholder="0.00" 
-                    value={newCaseClaimAmt} 
-                    onChange={e => setNewCaseClaimAmt(e.target.value)} 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-semibold text-slate-900 placeholder-slate-600" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">حالة الدعوى</label>
-                  <select 
-                    value={newCaseStatus} 
-                    onChange={e => setNewCaseStatus(e.target.value)} 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm font-bold text-slate-900 cursor-pointer"
+                    <span>التالي</span>
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-emerald-700 text-white hover:bg-emerald-800 text-sm font-bold shadow-sm flex items-center gap-1.5"
                   >
-                    <option value="مفتوحة">مفتوحة (قيد النظر)</option>
-                    <option value="مغلقة">مغلقة (مفصولة)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 flex gap-3 justify-end">
-                <button 
-                  type="button" 
-                  onClick={() => { setShowAddCaseModal(false); setCaseError(""); }}
-                  className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm font-bold shadow-sm"
-                >
-                  إلغاء
-                </button>
-                <button 
-                  type="submit" 
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 text-sm font-bold shadow-sm"
-                >
-                  حفظ الدعوى
-                </button>
+                    <Check className="w-4 h-4" />
+                    <span>تأكيد تسجيل ملف القضية</span>
+                  </button>
+                )}
               </div>
             </form>
           </div>
