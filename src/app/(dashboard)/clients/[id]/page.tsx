@@ -84,14 +84,16 @@ export default function ClientProfilePage() {
 
     let cycles = prop.rentCycles ? [...prop.rentCycles] : [];
     
-    // Update all cycles that are due on or after the selected date
-    const incDate = new Date(increaseRentDate);
-    cycles = cycles.map(c => {
-      if (new Date(c.dueDate) >= incDate) {
-        return { ...c, amount: newAmount };
-      }
-      return c;
-    });
+    // Update all cycles starting from the selected date's cycle index
+    const startIndex = cycles.findIndex(c => c.dueDate === increaseRentDate);
+    if (startIndex > -1) {
+      cycles = cycles.map((c, i) => {
+        if (i >= startIndex) {
+          return { ...c, amount: newAmount };
+        }
+        return c;
+      });
+    }
 
     const newRevenue = cycles.reduce((acc, c) => acc + c.amount, 0);
 
@@ -869,7 +871,10 @@ export default function ClientProfilePage() {
                         </div>
                         <div className="flex-1 min-w-[200px]">
                            <label className="text-xs font-bold text-emerald-700 mb-1 block">تطبق على الدفعات ابتداءً من تاريخ</label>
-                           <input type="date" value={increaseRentDate} onChange={e => setIncreaseRentDate(e.target.value)} className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-600" />
+                           <select value={increaseRentDate} onChange={e => setIncreaseRentDate(e.target.value)} className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-600">
+                             <option value="">-- اختر الدفعة --</option>
+                             {prop.rentCycles?.map(c => <option key={c.id} value={c.dueDate}>دفعة {c.dueDate} (حالية: د.أ {c.amount})</option>)}
+                           </select>
                         </div>
                         <div className="w-full mt-2">
                           <button onClick={() => handleIncreaseRent(prop.id)} className="bg-emerald-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-emerald-700 transition-colors">حفظ التغيير</button>
