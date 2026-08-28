@@ -55,7 +55,9 @@ export default function ClientProfilePage() {
 
   const handleExtendContract = (propId: number) => {
     const prop = properties.find(p => p.id === propId);
-    if (!prop || !prop.rentAmount || !extendMonths) return;
+    if (!prop || !extendMonths) return;
+
+    const monthlyRent = Number(prop.rentAmount) || (prop.revenue && prop.durationMonths ? Math.round(prop.revenue / prop.durationMonths) : 0);
 
     let cycles = prop.rentCycles ? [...prop.rentCycles] : [];
     let lastDate = new Date();
@@ -71,7 +73,7 @@ export default function ClientProfilePage() {
       cycles.push({
         id: Date.now().toString() + "-" + Math.random().toString(36).substr(2, 9),
         dueDate: d.toISOString().split("T")[0],
-        amount: Number(prop.rentAmount),
+        amount: monthlyRent,
         receivedFromTenant: false,
         paidToLandlord: false
       });
@@ -100,7 +102,7 @@ export default function ClientProfilePage() {
           ...p,
           rentCycles: cycles,
           durationMonths: (p.durationMonths || 0) + extendMonths,
-          revenue: (p.revenue || 0) + (extendMonths * p.rentAmount!),
+          revenue: (p.revenue || 0) + (extendMonths * monthlyRent),
           endDate: newEndDate || p.endDate,
           nextRentDate: updatedNextRentDate,
           status: newStatus
@@ -124,9 +126,9 @@ export default function ClientProfilePage() {
 
   const ledgerData: any[] = [];
   clientProperties.forEach(p => {
-    ledgerData.push({ type: "إيراد", desc: `إيجار متوقع: د.أ {p.name}`, amount: p.revenue, date: p.nextRentDate || "-", status: p.payoutStatus === "Paid to Landlord" ? "تم التحويل" : "قيد التحصيل" });
+    ledgerData.push({ type: "إيراد", desc: `إيجار متوقع: ${p.name}`, amount: p.revenue, date: p.nextRentDate || "-", status: p.payoutStatus === "Paid to Landlord" ? "تم التحويل" : "قيد التحصيل" });
     p.expenses?.forEach(exp => {
-      ledgerData.push({ type: "مصروف", desc: `${p.name}: د.أ {exp.description}`, amount: -exp.amount, date: exp.date, status: "مخصوم" });
+      ledgerData.push({ type: "مصروف", desc: `${p.name}: ${exp.description}`, amount: -exp.amount, date: exp.date, status: "مخصوم" });
     });
   });
 
@@ -432,10 +434,10 @@ export default function ClientProfilePage() {
                       <tr key={idx} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3 px-4 text-sm font-bold text-slate-700">{item.date}</td>
                         <td className="py-3 px-4 text-sm font-bold">
-                          <span className={`px-2.5 py-1 rounded-md text-[10px] tracking-wider د.أ {item.type === 'إيراد' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>{item.type}</span>
+                          <span className={`px-2.5 py-1 rounded-md text-xs tracking-wider ${item.type === 'إيراد' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>{item.type}</span>
                         </td>
                         <td className="py-3 px-4 text-sm font-semibold text-slate-900">{item.desc}</td>
-                        <td className={`py-3 px-4 text-left text-sm font-extrabold د.أ {item.amount < 0 ? 'text-rose-600' : 'text-slate-900'}`}>{item.amount < 0 ? `-د.أ د.أ {Math.abs(item.amount)}` : `$${item.amount}`}</td>
+                        <td className={`py-3 px-4 text-left text-sm font-extrabold ${item.amount < 0 ? 'text-rose-600' : 'text-slate-900'}`}>{item.amount < 0 ? `-د.أ ${Math.abs(item.amount)}` : `$${item.amount}`}</td>
                         <td className="py-3 px-4 text-left text-sm font-bold text-slate-500">{item.status}</td>
                       </tr>
                     ))
@@ -547,7 +549,7 @@ export default function ClientProfilePage() {
           const isRentLate = rentDaysLeft !== null && rentDaysLeft < 0;
 
           return (
-          <div key={prop.id} className="bg-white rounded-3xl shadow-sm border border-slate-200 p-4 lg:p-0 lg:bg-transparent lg:rounded-none lg:shadow-none lg:border-0 lg:border-b lg:border-slate-200 lg:last:border-0 flex flex-col justify-between group transition-colors hover:bg-slate-50/50">
+          <div key={prop.id} className="bg-white rounded-3xl shadow-sm border border-slate-200 p-4 lg:p-0 lg:bg-transparent lg:rounded-none lg:shadow-none lg:border-0 lg:border-b lg:border-slate-200 lg:last:border-0 flex flex-col justify-between group transition-colors antialiased hover:bg-slate-50/50">
             <div 
               className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 py-2 lg:py-3 cursor-pointer"
               onClick={() => {
@@ -564,32 +566,32 @@ export default function ClientProfilePage() {
                    <Building className="w-5 h-5" />
                  </div>
                  <div className="min-w-0">
-                   <h3 className="text-sm font-extrabold text-slate-900 truncate">{prop.name}</h3>
-                   <p className="text-xs font-bold text-slate-500 truncate mt-0.5">{prop.type} • {prop.location}</p>
+                   <h3 className="text-base font-extrabold text-slate-900 truncate">{prop.name}</h3>
+                   <p className="text-sm font-bold text-slate-500 truncate mt-0.5">{prop.type} • {prop.location}</p>
                  </div>
                </div>
 
                {/* Stats Grid */}
                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full lg:flex-1 bg-slate-50 lg:bg-transparent p-3 lg:p-0 rounded-2xl lg:rounded-none border border-slate-100 lg:border-0">
                  <div>
-                   <p className="text-[10px] font-bold text-slate-400 mb-0.5 uppercase tracking-wider">المستأجر</p>
-                   <p className="text-xs font-bold text-slate-800 truncate">{prop.tenant}</p>
+                   <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">المستأجر</p>
+                   <p className="text-sm font-bold text-slate-800 truncate">{prop.tenant}</p>
                  </div>
                  <div>
-                   <p className="text-[10px] font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الإيجار الشهري</p>
-                   <p className="text-xs font-black text-indigo-700">د.أ {prop.rentAmount?.toLocaleString() || prop.revenue?.toLocaleString()}</p>
+                   <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الإيجار الشهري</p>
+                   <p className="text-sm font-black text-indigo-700">د.أ {prop.rentAmount?.toLocaleString() || prop.revenue?.toLocaleString()}</p>
                  </div>
                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الاستحقاق القادم</p>
-                    <p className={`text-xs font-bold د.أ {isRentLate ? 'text-rose-600' : 'text-slate-800'}`}>
+                    <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider">الاستحقاق القادم</p>
+                    <p className={`text-sm font-bold ${isRentLate ? 'text-rose-600' : 'text-slate-800'}`}>
                       {prop.nextRentDate || "غير محدد"}
-                      {isRentLate && <span className="ml-1.5 text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-md">متأخر</span>}
+                      {isRentLate && <span className="ml-1.5 text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-md">متأخر</span>}
                     </p>
                  </div>
                  <div className="flex items-center">
                     <div className="w-full">
-                      <p className="text-[10px] font-bold text-slate-400 mb-0.5 uppercase tracking-wider block lg:hidden">الحالة</p>
-                      <span className={`px-2 py-1 text-[11px] font-extrabold rounded-lg shadow-sm border whitespace-nowrap د.أ {
+                      <p className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-wider block lg:hidden">الحالة</p>
+                      <span className={`px-2 py-1 text-xs font-extrabold rounded-lg shadow-sm border whitespace-nowrap ${
                         prop.status === 'نشط' || prop.status === 'Active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                         prop.status === 'متأخر' || prop.status === 'Delayed' ? 'bg-amber-50 text-amber-800 border-amber-200' :
                         prop.status === 'محجوز' ? 'bg-slate-800 text-white border-slate-900' :
@@ -608,16 +610,16 @@ export default function ClientProfilePage() {
                       <FileText className="w-4 h-4" />
                     </button>
                   )}
-                  <button onClick={() => {setShowRentCyclesFor(showRentCyclesFor === prop.id ? null : prop.id); setShowIssuesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border د.أ {showRentCyclesFor === prop.id ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-indigo-100'}`} title="جدول الدفعات">
+                  <button onClick={() => {setShowRentCyclesFor(showRentCyclesFor === prop.id ? null : prop.id); setShowIssuesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showRentCyclesFor === prop.id ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-indigo-100'}`} title="جدول الدفعات">
                     <CalendarIcon className="w-4 h-4" />
                   </button>
-                  <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border د.أ {showIssuesFor === prop.id ? 'bg-amber-600 text-white border-amber-700 shadow-md' : 'text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-100'}`} title="قضايا ومشاكل">
+                  <button onClick={() => {setShowIssuesFor(showIssuesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showIssuesFor === prop.id ? 'bg-amber-600 text-white border-amber-700 shadow-md' : 'text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-100'}`} title="قضايا ومشاكل">
                     <AlertTriangle className="w-4 h-4" />
                   </button>
-                  <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowIssuesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border د.أ {showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200'}`} title="المصروفات">
+                  <button onClick={() => {setShowExpensesFor(showExpensesFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowIssuesFor(null); setShowPayoutFor(null);}} className={`p-2 rounded-lg transition-colors border ${showExpensesFor === prop.id ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200'}`} title="المصروفات">
                     <Receipt className="w-4 h-4" />
                   </button>
-                  <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowIssuesFor(null);}} className={`p-2 rounded-lg transition-colors border د.أ {showPayoutFor === prop.id ? 'bg-emerald-600 text-white border-emerald-700 shadow-md' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100'}`} title="تحويل للمالك">
+                  <button onClick={() => {setShowPayoutFor(showPayoutFor === prop.id ? null : prop.id); setShowRentCyclesFor(null); setShowExpensesFor(null); setShowIssuesFor(null);}} className={`p-2 rounded-lg transition-colors border ${showPayoutFor === prop.id ? 'bg-emerald-600 text-white border-emerald-700 shadow-md' : prop.payoutStatus === 'Paid to Landlord' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100'}`} title="تحويل للمالك">
                     {prop.payoutStatus === 'Paid to Landlord' ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />}
                   </button>
 
@@ -651,18 +653,18 @@ export default function ClientProfilePage() {
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
                     <div className="flex justify-between items-end mb-2">
                       <div>
-                        <p className="text-xs font-bold text-slate-500 mb-1">إجمالي قيمة العقد (المتوقع)</p>
+                        <p className="text-sm font-bold text-slate-500 mb-1">إجمالي قيمة العقد (المتوقع)</p>
                         <p className="text-lg font-black text-slate-900">د.أ {totalExpected.toLocaleString()}</p>
                       </div>
                       <div className="text-left">
-                        <p className="text-xs font-bold text-slate-500 mb-1">المتبقي للتحصيل</p>
+                        <p className="text-sm font-bold text-slate-500 mb-1">المتبقي للتحصيل</p>
                         <p className="text-lg font-black text-rose-600">د.أ {remaining.toLocaleString()}</p>
                       </div>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
                       <div className="bg-emerald-500 h-2.5 rounded-full" style={{ width: `${percent}%` }}></div>
                     </div>
-                    <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
+                    <div className="flex justify-between mt-2 text-xs font-bold text-slate-400">
                       <span>تم التحصيل: د.أ {totalCollected.toLocaleString()} ({percent}%)</span>
                       <span>100%</span>
                     </div>
@@ -670,7 +672,7 @@ export default function ClientProfilePage() {
 
                   {extendingPropId === prop.id && (
                     <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200 mb-4 animate-in fade-in">
-                      <p className="text-xs font-bold text-indigo-800 mb-2">أدخل مدة التمديد (بالأشهر):</p>
+                      <p className="text-sm font-bold text-indigo-800 mb-2">أدخل مدة التمديد (بالأشهر):</p>
                       <div className="flex gap-2">
                         <input type="number" min="1" value={extendMonths} onChange={(e) => setExtendMonths(Number(e.target.value))} className="px-3 py-2 border border-indigo-200 rounded-lg text-sm w-24 outline-none focus:ring-2 focus:ring-indigo-600 font-bold bg-white" />
                         <button onClick={() => handleExtendContract(prop.id)} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-700 transition-colors">تأكيد التمديد</button>

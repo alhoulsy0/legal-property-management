@@ -1,0 +1,12 @@
+﻿const fs = require('fs');
+let c = fs.readFileSync('src/app/(dashboard)/clients/[id]/page.tsx', 'utf8');
+c = c.replace(/text-\[10px\]/g, 'text-xs');
+c = c.replace(/<p className="text-xs font-bold/g, '<p className="text-sm font-bold');
+c = c.replace(/<p className="text-xs font-black/g, '<p className="text-sm font-black');
+c = c.replace(/<p className=\{`text-xs font-bold/g, '<p className={`text-sm font-bold');
+c = c.replace(/text-\[9px\]/g, 'text-[10px]');
+c = c.replace(/text-\[11px\]/g, 'text-xs');
+c = c.replace(/group transition-colors/g, 'group transition-colors antialiased');
+c = c.replace(/<h3 className="text-sm font-extrabold/g, '<h3 className="text-base font-extrabold');
+c = c.replace(/<p className="text-xs font-bold text-slate-500 truncate mt-0.5">/g, '<p className="text-sm font-bold text-slate-500 truncate mt-0.5">');
+fs.writeFileSync('src/app/(dashboard)/clients/[id]/page.tsx', c, 'utf8');
