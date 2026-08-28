@@ -22,9 +22,9 @@ export default function DashboardPage() {
   let alerts: any[] = [];
   properties.forEach(p => {
     if (p.status === "Delayed") {
-      alerts.push({ id: `d-د.أ {p.id}`, type: "متأخر", message: `الإيجار متأخر لعقار د.أ {p.name}.`, priority: "medium" });
+      alerts.push({ id: `d-${p.id}`, type: "متأخر", message: `الإيجار متأخر لعقار ${p.name}.`, priority: "medium" });
     } else if (p.status === "Litigation") {
-      alerts.push({ id: `l-د.أ {p.id}`, type: "قضية منظورة", message: `نزاع قانوني جاري على د.أ {p.name}.`, priority: "high" });
+      alerts.push({ id: `l-${p.id}`, type: "قضية منظورة", message: `نزاع قانوني جاري على ${p.name}.`, priority: "high" });
     }
   });
 
@@ -38,10 +38,10 @@ export default function DashboardPage() {
       const diffDays = Math.ceil((rentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       if (diffDays >= 0 && diffDays <= 14) { 
         upcomingActivities.push({
-          id: `rent-د.أ {p.id}`,
+          id: `rent-${p.id}`,
           date: p.nextRentDate,
           rawDate: rentDate,
-          title: `تحصيل إيجار: د.أ {p.name}`,
+          title: `تحصيل إيجار: ${p.name}`,
           time: "09:00 صباحاً"
         });
       }
@@ -52,10 +52,10 @@ export default function DashboardPage() {
       const diffDays = Math.ceil((contractDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       if (diffDays >= 0 && diffDays <= 30) { 
         upcomingActivities.push({
-          id: `contract-د.أ {p.id}`,
+          id: `contract-${p.id}`,
           date: p.endDate,
           rawDate: contractDate,
-          title: `انتهاء عقد: د.أ {p.name}`,
+          title: `انتهاء عقد: ${p.name}`,
           time: "10:00 صباحاً"
         });
       }
@@ -160,11 +160,11 @@ export default function DashboardPage() {
               {alerts.length === 0 && <p className="text-sm font-bold text-slate-500 italic p-2">لا يوجد أي مخالفات حالياً.</p>}
               {alerts.map((alert: any) => (
                 <div key={alert.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-start gap-4">
-                  <div className={`p-3 rounded-xl shrink-0 د.أ {alert.priority === "high" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>
+                  <div className={`p-3 rounded-xl shrink-0 ${alert.priority === "high" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>
                     <AlertTriangle className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className={`text-sm font-extrabold د.أ {alert.priority === "high" ? "text-rose-800" : "text-amber-800"}`}>
+                    <p className={`text-sm font-extrabold ${alert.priority === "high" ? "text-rose-800" : "text-amber-800"}`}>
                       حالة: {alert.type}
                     </p>
                     <p className="text-sm mt-1 text-slate-600 font-semibold">{alert.message}</p>
@@ -198,9 +198,9 @@ export default function DashboardPage() {
             <div className="space-y-2 overflow-y-auto pl-2 custom-scrollbar">
               {tasks.length === 0 && <p className="text-sm font-bold text-slate-500 italic p-2 text-center">لا توجد مهام معلقة!</p>}
               {tasks.map(task => (
-                <div key={task.id} className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-300 border border-transparent hover:border-slate-200 cursor-pointer د.أ {task.done ? 'bg-slate-100 opacity-50 scale-95' : 'bg-slate-50 hover:bg-slate-100'}`} onClick={() => toggleTask(task.id)}>
+                <div key={task.id} className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-300 border border-transparent hover:border-slate-200 cursor-pointer ${task.done ? 'bg-slate-100 opacity-50 scale-95' : 'bg-slate-50 hover:bg-slate-100'}`} onClick={() => toggleTask(task.id)}>
                   <input type="checkbox" checked={task.done} readOnly className="w-5 h-5 rounded border-slate-300 text-blue-600 pointer-events-none placeholder-slate-500" />
-                  <span className={`text-sm font-bold د.أ {task.done ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{task.text}</span>
+                  <span className={`text-sm font-bold ${task.done ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{task.text}</span>
                 </div>
               ))}
             </div>
@@ -259,7 +259,7 @@ export default function DashboardPage() {
                       <select 
                         value={prop.status} 
                         onChange={(e) => updatePropertyStatus(prop.id, 'status', e.target.value)}
-                        className={`text-xs font-black px-3 py-1.5 rounded-lg border outline-none cursor-pointer د.أ {
+                        className={`text-xs font-black px-3 py-1.5 rounded-lg border outline-none cursor-pointer ${
                           prop.status === 'نشط' || prop.status === 'Active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                           prop.status === 'متأخر' || prop.status === 'Delayed' ? 'bg-amber-50 text-amber-800 border-amber-200' :
                           'bg-rose-50 text-rose-800 border-rose-200'
@@ -275,7 +275,7 @@ export default function DashboardPage() {
                       <select 
                         value={prop.payoutStatus === 'Paid to Landlord' ? 'تم التحويل' : 'قيد التحصيل'} 
                         onChange={(e) => updatePropertyStatus(prop.id, 'payoutStatus', e.target.value === 'تم التحويل' ? 'Paid to Landlord' : 'قيد التحصيل')}
-                        className={`text-xs font-black px-3 py-1.5 rounded-lg border outline-none cursor-pointer د.أ {
+                        className={`text-xs font-black px-3 py-1.5 rounded-lg border outline-none cursor-pointer ${
                           prop.payoutStatus === 'Paid to Landlord' ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-slate-100 text-slate-700 border-slate-300'
                         }`}
                       >
