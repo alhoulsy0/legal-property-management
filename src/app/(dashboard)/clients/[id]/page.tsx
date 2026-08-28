@@ -514,8 +514,9 @@ export default function ClientProfilePage() {
       </div>
 
       {showLedger && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in p-4">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <div className={isPrinting ? "absolute inset-0 z-[99999] bg-white p-0" : "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in p-4"}>
+          <div className={isPrinting ? "bg-white w-full max-w-full flex flex-col h-auto" : "bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col"}>
+            {!isPrinting && (
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
               <div>
                 <h3 className="text-2xl font-extrabold text-slate-900">{client.name} - السجل المالي</h3>
@@ -530,8 +531,9 @@ export default function ClientProfilePage() {
                 </button>
               </div>
             </div>
+            )}
             
-            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+            <div className={isPrinting ? "p-8 w-full max-w-5xl mx-auto flex-1 overflow-visible h-auto" : "p-6 overflow-y-auto flex-1 custom-scrollbar"}>
                             <div id="ledger-report" className={isPrinting ? "bg-white w-full h-auto overflow-visible" : "bg-white p-8 rounded-2xl"}>
                 {/* Print Title */}
                 <div className="mb-8 border-b-2 border-slate-800 pb-4 flex justify-between items-end">
