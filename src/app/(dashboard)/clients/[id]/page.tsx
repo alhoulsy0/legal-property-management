@@ -538,6 +538,41 @@ export default function ClientProfilePage() {
                   )}
                 </tbody>
               </table>
+
+              <h4 className="text-xl font-extrabold text-slate-900 mt-10 mb-4">تفاصيل العقارات والتحصيلات</h4>
+              <table className="w-full text-right border-collapse">
+                <thead>
+                  <tr className="bg-slate-100/50">
+                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">العقار</th>
+                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">قيمة العقد</th>
+                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">المحصل</th>
+                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">طريقة التحويل</th>
+                    <th className="py-3 px-4 text-xs font-extrabold text-slate-600 border-b border-slate-200">رقم الحوالة</th>
+                    <th className="py-3 px-4 text-left text-xs font-extrabold text-slate-600 border-b border-slate-200">المتبقي</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {clientProperties.length === 0 ? (
+                    <tr><td colSpan={6} className="py-10 text-center text-slate-500 font-bold">لا توجد عقارات مسجلة.</td></tr>
+                  ) : (
+                    clientProperties.map((p, idx) => {
+                      const collected = (p.rentCycles || []).reduce((acc, c) => c.receivedFromTenant ? acc + c.amount : acc, 0);
+                      const remaining = p.revenue - collected;
+                      return (
+                        <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3 px-4 text-sm font-bold text-slate-900">{p.name}</td>
+                          <td className="py-3 px-4 text-sm font-extrabold text-indigo-700">د.أ {p.revenue.toLocaleString()}</td>
+                          <td className="py-3 px-4 text-sm font-extrabold text-emerald-600">د.أ {collected.toLocaleString()}</td>
+                          <td className="py-3 px-4 text-sm font-bold text-slate-600">{p.payoutMethod || "-"}</td>
+                          <td className="py-3 px-4 text-sm font-bold text-slate-600">{p.payoutTransactionId || "-"}</td>
+                          <td className="py-3 px-4 text-left text-sm font-extrabold text-rose-600">د.أ {remaining.toLocaleString()}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+
               </div>
             </div>
           </div>
