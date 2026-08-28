@@ -4,7 +4,7 @@ import html2canvas from "html2canvas";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowRight, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, TrendingDown, AlertTriangle, Trash2, Download, Receipt, Send, CheckCircle2, FileBarChart, Copy, Archive } from "lucide-react";
+import { ArrowRight, Building, Plus, FileText, DollarSign, MapPin, UploadCloud, User, Calendar as CalendarIcon, Clock, Edit2, TrendingUp, TrendingDown, AlertTriangle, Trash2, Download, Receipt, Send, CheckCircle2, FileBarChart, Copy, Archive , Printer } from "lucide-react";
 import { useGlobal, PropertyData, ExpenseData } from "../../GlobalProvider";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -217,23 +217,8 @@ export default function ClientProfilePage() {
     });
   });
 
-  const exportPDF = async () => {
-    const ledgerEl = document.getElementById("ledger-report");
-    if (!ledgerEl) {
-      alert("الرجاء فتح الكشف المالي أولاً لتصديره");
-      return;
-    }
-    try {
-      const canvas = await html2canvas(ledgerEl, { scale: 2 });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${client?.name}_Financial_Report.pdf`);
-    } catch(err) {
-      console.error(err);
-    }
+  const exportPDF = () => {
+    window.print();
   };
   
   const activeCount = clientProperties.filter(p => p.status === 'Active' || p.status === 'نشط').length;
@@ -531,7 +516,7 @@ export default function ClientProfilePage() {
               </div>
               <div className="flex gap-3">
                 <button onClick={exportPDF} className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl hover:bg-emerald-700 font-bold text-sm shadow-md flex items-center gap-2">
-                  <Download className="w-4 h-4" /> تصدير PDF
+                  <Printer className="w-4 h-4" /> طباعة / تصدير PDF
                 </button>
                 <button onClick={() => setShowLedger(false)} className="bg-white text-slate-700 border border-slate-300 px-5 py-2.5 rounded-xl hover:bg-slate-100 font-bold text-sm shadow-sm">
                   إغلاق
